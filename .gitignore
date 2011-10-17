@@ -1,5 +1,6 @@
 #
 game_logs/
+*.pyc
 
 #OS junk files
 [Tt]humbs.db

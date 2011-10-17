@@ -25,6 +25,8 @@ namespace Ants {
 		
 		public List<AntLoc> MyAnts;
 		public List<AntLoc> EnemyAnts;
+		public List<AntLoc> MyHills;
+		public List<AntLoc> EnemyHills;		
 		public List<Location> DeadTiles;
 		public List<Location> FoodTiles;
 		
@@ -46,6 +48,8 @@ namespace Ants {
 			
 			MyAnts = new List<AntLoc>();
 			EnemyAnts = new List<AntLoc>();
+			MyHills = new List<AntLoc>();
+			EnemyHills = new List<AntLoc>();
 			DeadTiles = new List<Location>();
 			FoodTiles = new List<Location>();
 			
@@ -65,10 +69,14 @@ namespace Ants {
 			// clear ant data
 			foreach (Location loc in MyAnts) map[loc.row, loc.col] = Tile.Land;
 			foreach (Location loc in EnemyAnts) map[loc.row, loc.col] = Tile.Land;
+			foreach (Location loc in MyHills) map[loc.row, loc.col] = Tile.Land;
+			foreach (Location loc in EnemyHills) map[loc.row, loc.col] = Tile.Land;
 			foreach (Location loc in DeadTiles) map[loc.row, loc.col] = Tile.Land;
 			
 			MyAnts.Clear();
 			EnemyAnts.Clear();
+			MyHills.Clear();
+			EnemyHills.Clear();			
 			DeadTiles.Clear();
 			
 			// set all known food to unseen
@@ -86,6 +94,18 @@ namespace Ants {
 				EnemyAnts.Add(ant);
 			}
 		}
+
+		public void addHill (int row, int col, int team) {
+			map[row, col] = Tile.Hill;
+			
+			AntLoc ant = new AntLoc(row, col, team);
+			if (team == 0) {
+				MyHills.Add(ant);
+			} else {
+				EnemyHills.Add(ant);
+			}
+		}
+		
 		
 		public void addFood (int row, int col) {
 			map[row, col] = Tile.Food;

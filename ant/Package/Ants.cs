@@ -112,6 +112,8 @@ namespace Ants {
 					
 					if (tokens[0].Equals("a")) {
 						state.addAnt(row, col, int.Parse(tokens[3]));
+					} else if (tokens[0].Equals("h")) {
+						state.addHill(row, col, int.Parse(tokens[3]));
 					} else if (tokens[0].Equals("f")) {
 						state.addFood(row, col);
 					} else if (tokens[0].Equals("r")) {
