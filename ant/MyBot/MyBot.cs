@@ -65,6 +65,8 @@ namespace Ants {
 				bool pass = false;
 
 				IEnumerable<char> directions = state.direction(ant, ready[ant]);
+				state.directionEx(ant, ready[ant]);
+				
 				foreach (char direction in directions) {
 					Location newLoc = state.destination(ant, direction);
 					

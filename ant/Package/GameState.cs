@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 
 namespace Ants {
@@ -174,8 +175,9 @@ namespace Ants {
 		
 		public ICollection<char> direction (Location loc1, Location loc2) {
 			// determine the 1 or 2 fastest (closest) directions to reach a location
-			List<char> directions = new List<char>();
+
 			
+			List<char> directions = new List<char>();
 			if (loc1.row < loc2.row) {
 				if (loc2.row - loc1.row >= Height / 2)
 					directions.Add('n');
@@ -204,7 +206,101 @@ namespace Ants {
 			
 			return directions;
 		}
+		
+		public ICollection<char> directionEx (Location loc1, Location loc2) {
+			
+			
+			FileStream fs = new FileStream("log.log", System.IO.FileMode.Create, System.IO.FileAccess.Write);
+			StreamWriter sw = new StreamWriter(fs);
+			sw.WriteLine("start");
+			
+			IDictionary<Location, Top> OpenList = new Dictionary<Location, Top>();
+			IDictionary<Location, Top> CloseList = new Dictionary<Location, Top>();
+			List<char> directions = new List<char>();
+			
+			
+			CloseList.Add(loc1, new Top(loc1, new Location(0, distance(loc1, loc2))));
+			
+			sw.WriteLine("find " + distance(loc1, loc2) + " / " + loc1 + " / " + loc2);
+			
+			Location loc = loc1;
 
+			bool finish = true;
+			
+			while (finish) {
+				
+				sw.WriteLine("main " + loc);
+				foreach(char c in Ants.Aim.Keys) {
+					
+					Location newLoc = destination(loc, c);
+						
+					if (passable(newLoc) && !CloseList.Keys.Contains(newLoc)) {
+						Location size = new Location(CloseList[loc].Size.row + 1, distance(newLoc, loc2));
+						if (OpenList.ContainsKey(newLoc))
+						{
+							if (size.row < OpenList[newLoc].Size.row) 
+							{
+								OpenList[newLoc] = new Top(loc, size);
+								sw.WriteLine(newLoc);
+							}
+						} else {
+							OpenList.Add(newLoc, new Top(loc, size));
+							sw.WriteLine(newLoc);
+						}
+					} else {sw.WriteLine("bad " + newLoc);}
+				}
+				
+				
+				sw.WriteLine("list " + OpenList.Count);		
+				int sum = int.MaxValue;
+				Location addLoc = null;
+				
+				
+				foreach(var item in OpenList.Keys) {
+					sw.WriteLine(item + " | " + OpenList[item].Size);
+					Top tmp = OpenList[item];
+					
+					if (tmp.Size.col == 0) {
+						finish = false;
+						addLoc = item;
+						sw.WriteLine("FIND");
+						break;
+					}
+					
+					if ((tmp.Size.col + tmp.Size.row) < sum) {
+						sum = tmp.Size.col + tmp.Size.row;
+						addLoc = item;
+					}
+				}
+				
+				CloseList.Add(addLoc, OpenList[addLoc]);
+				OpenList.Remove(addLoc);
+				loc = addLoc;
+			}
+			
+			
+			Location find = loc2;
+			Location old;
+			
+			while (find != loc1) {
+				sw.WriteLine(find);
+				old = CloseList[find].Parent;
+				directions.AddRange(direction(old, find));
+
+			foreach(var item in direction(old, find))
+			{
+				sw.WriteLine(item);
+			}
+
+				find = old;
+			}
+			
+			sw.Close();
+			fs.Close();
+
+			return directions;			
+
+		}
 	}
 }
 

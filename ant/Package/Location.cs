@@ -12,7 +12,19 @@ namespace Ants {
 			this.row = row;
 			this.col = col;
 		}
-		
+		public override string ToString ()
+		{
+			return string.Format ("[Location: row={0}, col={1}]", row, col);
+		}
+		public override int GetHashCode ()
+		{
+			return row * int.MaxValue + col;
+		}
+		public override bool Equals (object obj)
+		{
+			Location loc = (Location)obj;
+			return (col == loc.col) ;
+		}
 	}
 	
 	public class AntLoc : Location {
@@ -30,6 +42,24 @@ namespace Ants {
 	
 		public int GetHashCode(Location loc) {
 			return loc.row * int.MaxValue + loc.col;
+		}
+	}
+	
+	public class Top
+	{
+		public Location Parent;
+		public Location Size;
+		
+		public Top()
+		{
+			Parent = new Location(0,0);
+			Size = new Location(0,0);
+		}
+		
+		public Top (Location Parent, Location Size)
+		{
+			this.Parent = Parent;
+			this.Size = Size;
 		}
 	}
 }
