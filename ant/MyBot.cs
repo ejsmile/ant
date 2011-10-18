@@ -13,7 +13,7 @@ namespace Ants
 		private IDictionary<AntLoc, Location> aims;
 		private FileStream fs;
 		private StreamWriter sw;
-		private int number = 0;
+		private int number = 1;
 		
 		public MyBot ()
 		{
@@ -28,11 +28,11 @@ namespace Ants
 		// doTurn is run once per turn
 		public override void doTurn (GameState state)
 		{
-			sw.WriteLine("!Turn " + number++);
+			sw.WriteLine ("!Turn " + number++);
 			destinations.Clear ();
 			ready.Clear ();	
 			//Clear fantom aims
-		/*
+			/*
 			string st = "";
 			foreach(var item in state.MyAnts)
 			{
@@ -66,7 +66,7 @@ namespace Ants
 							if (state.unoccupied (loc) && !destinations.Contains (loc)) {
 								if (!aims.ContainsKey (item))
 									aims.Add (item, loc);
-									//ready.Add(item, loc);
+								//ready.Add(item, loc);
 								break;//add one moves
 							}
 						}
@@ -79,6 +79,35 @@ namespace Ants
 			
 			//find aim for ants in enemy
 			foreach (Location aim in state.EnemyAnts) {
+				//TODO emeny can move ??? what find myant is this emeny
+				//This enemy is aim myants
+				
+				/*
+				//list variuos enemy was past turn
+				
+				IList<AntLoc> enemys = new List<AntLoc>();
+				enemys.Add(aim);
+				
+				foreach(var item in Ants.Aim.Keys)
+				{
+					enemys(destination (loc, c));
+				}
+				
+				bool find = false;
+				foreach(var item in enemys) {
+					foreach(var ant in aims.keys)
+					{
+						if ((aims[ant].row == item.row) && (aims[ant].col == item.col))
+						{
+						 //find
+							// not aims.Remove(ant);
+						}
+					}
+					if (find) break;
+				}
+				if (find) continue;
+				//this new enemy
+				/**/
 				int minDist = int.MaxValue;
 				AntLoc _ant = null;
 				foreach (AntLoc ant in state.MyAnts) {
@@ -89,36 +118,41 @@ namespace Ants
 					}
 				}
 				if (_ant != null) {	
-					sw.WriteLine(_ant + " to enemy " + aim);
+					sw.WriteLine (_ant + " to enemy " + aim);
 					if (!ready.ContainsKey (_ant))
 						ready.Add (_ant, aim);
 					state.MyAnts.Remove (_ant);
 					if (aims.ContainsKey (_ant))
 						aims.Remove (_ant);
 				}
+				//}
 			}
 			
 			
 			//find aim for ants in food
-			
 			foreach (Location aim in state.FoodTiles) {
-				int minDist = int.MaxValue;
-				AntLoc _ant = null;
-				foreach (AntLoc ant in state.MyAnts) {
-					int dist = state.distance (ant, aim);
-					if (dist < minDist) {
-						_ant = ant;
-						minDist = dist;
-					}					
-				}				
-				if (_ant != null) {
-					sw.WriteLine(_ant + " to food " + aim);					
-					if (!ready.ContainsKey (_ant))
-						ready.Add (_ant, aim);
-					state.MyAnts.Remove (_ant);
-					if (aims.ContainsKey (_ant))
-						aims.Remove (_ant);
-				}	
+				//This food is ants aim?
+				if (!aims.Values.Contains (aim)) {
+					//Not
+					int minDist = int.MaxValue;
+					AntLoc _ant = null;
+				
+					foreach (AntLoc ant in state.MyAnts) {
+						int dist = state.distance (ant, aim);
+						if (dist < minDist) {
+							_ant = ant;
+							minDist = dist;
+						}					
+					}				
+					if (_ant != null) {
+						sw.WriteLine (_ant + " to food " + aim);					
+						if (!ready.ContainsKey (_ant))
+							ready.Add (_ant, aim);
+						state.MyAnts.Remove (_ant);
+						if (aims.ContainsKey (_ant))
+							aims.Remove (_ant);
+					}
+				}
 			}
 
 			
@@ -143,20 +177,20 @@ namespace Ants
 				if (aims.ContainsKey (ant)) {
 					
 					
-					if ((ant.row == aims [ant].row) && (ant.col == aims[ant].col)) {
-						sw.WriteLine(ant + " change " + aim);
+					if ((ant.row == aims [ant].row) && (ant.col == aims [ant].col)) {
+						sw.WriteLine (ant + " change " + aim);
 						aims [ant] = aim;
 						if (!ready.ContainsKey (ant))
 							ready.Add (ant, aims [ant]);
 					} else {
-						sw.WriteLine(ant + " aim:" + aim);
+						sw.WriteLine (ant + " aim:" + aim);
 						if (!ready.ContainsKey (ant))
 							ready.Add (ant, aims [ant]);
 					}/**/
 					
 					
 				} else {
-					sw.WriteLine("new aim" + aim);
+					sw.WriteLine ("new aim" + aim);
 					aims.Add (ant, aim);
 					if (!ready.ContainsKey (ant))
 						ready.Add (ant, aim);
@@ -168,7 +202,7 @@ namespace Ants
 			foreach (AntLoc ant in ready.Keys) {
 				
 				
-				IEnumerable<char> directions = state.direction_algor_A (ant, ready [ant]);
+				IEnumerable<char > directions = state.direction_algor_A (ant, ready [ant]);
 				
 				//path is null remove in famtom aim
 				/*if (!directions.GetEnumerator().MoveNext()) {
@@ -178,11 +212,10 @@ namespace Ants
 				
 				/**/
 				string st = "";
-				foreach(char cc in directions)
-				{
+				foreach (char cc in directions) {
 					st = st + cc;
 				}
-				sw.WriteLine (ant + " aim " + ready[ant] + " goto " + st);
+				sw.WriteLine (ant + " aim " + ready [ant] + " goto " + st);
 				/**/
 				
 				foreach (char direction in directions) {
