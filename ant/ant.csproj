@@ -9,7 +9,6 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>ant</RootNamespace>
     <AssemblyName>ant</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <StartupObject>Ants.MyBot</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
@@ -34,16 +33,17 @@
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <Compile Include="Package\Ants.cs" />
-    <Compile Include="Package\Bot.cs" />
-    <Compile Include="Package\GameState.cs" />
-    <Compile Include="Package\Location.cs" />
-    <Compile Include="Package\Tile.cs" />
-    <Compile Include="MyBot\MyBot.cs" />
+    <Compile Include="Ants.cs" />
+    <Compile Include="Bot.cs" />
+    <Compile Include="GameState.cs" />
+    <Compile Include="Location.cs" />
+    <Compile Include="Tile.cs" />
+    <Compile Include="MyBot.cs" />
+    <Compile Include="tools\sample_bots\csharp\GreedyBot.cs">
+      <Link>tools\GreedyBot.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Package\" />
-    <Folder Include="MyBot\" />
     <Folder Include="tools\" />
   </ItemGroup>
 </Project>
