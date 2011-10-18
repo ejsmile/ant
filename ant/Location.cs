@@ -45,18 +45,18 @@ namespace Ants {
 		}
 	}
 	
-	public class Top
+	public class Node
 	{
 		public Location Parent;
 		public Location Size;
 		
-		public Top()
+		public Node()
 		{
 			Parent = new Location(0,0);
 			Size = new Location(0,0);
 		}
 		
-		public Top (Location Parent, Location Size)
+		public Node (Location Parent, Location Size)
 		{
 			this.Parent = Parent;
 			this.Size = Size;
