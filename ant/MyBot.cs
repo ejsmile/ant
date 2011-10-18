@@ -64,8 +64,8 @@ namespace Ants {
 			{
 				bool pass = false;
 
-				IEnumerable<char> directions = state.direction(ant, ready[ant]);
-				state.directionEx(ant, ready[ant]);
+				//IEnumerable<char> directions = state.direction(ant, ready[ant]);
+				IEnumerable<char> directions = state.direction_algor_A(ant, ready[ant]);
 				
 				foreach (char direction in directions) {
 					Location newLoc = state.destination(ant, direction);
@@ -77,7 +77,7 @@ namespace Ants {
 						break;
 					}
 				}
-				if (pass) state.MyAnts.Add(ant);
+				if (!pass) state.MyAnts.Add(ant);
 				if (state.TimeRemaining < 10) break;
 			}
 			
