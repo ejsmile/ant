@@ -156,20 +156,18 @@ namespace Ants
 		public bool passable (Location loc)
 		{
 			// true if not water
-			return map [loc.row, loc.col] != Tile.Water;
+			return map [loc.row, loc.col] != Tile.Water && map [loc.row, loc.col] != Tile.Hill;
 		}
 		
 		public bool unoccupied (Location loc)
 		{
 			// true if no ants are at the location
-			return passable (loc) && map [loc.row, loc.col] != Tile.Ant && map [loc.row, loc.col] != Tile.Hill;
+			return passable (loc) && map [loc.row, loc.col] != Tile.Ant;// && map [loc.row, loc.col] != Tile.Hill;
 		}
 		
-		public Location destination (Location loc, char direction)
+		public Location destination (Location loc, Location delta)
 		{
-			// calculate a new location given the direction and wrap correctly
-			Location delta = Ants.Aim [direction];
-			
+					// calculate a new location given the direction and wrap correctly
 			int row = (loc.row + delta.row) % Height;
 			if (row < 0)
 				row += Height; // because the modulo of a negative number is negative
@@ -179,6 +177,12 @@ namespace Ants
 				col += Width;
 			
 			return new Location (row, col);
+		}
+		
+		public Location destination (Location loc, char direction)
+		{
+			return destination(loc, Ants.Aim [direction]);
+			
 		}
 		
 		public int distance (Location loc1, Location loc2)
@@ -258,17 +262,18 @@ namespace Ants
 						}
 					}
 					
-					//TODO ?FIX
-					if ((newLoc.row == loc2.row) && (newLoc.col == loc2.col)) {
+					//FIXME проверка вхождения 
+					if ((newLoc.row == loc2.row) && (newLoc.col == loc2.col) && passable (newLoc)) {
 						finish = false;
-						if (!CloseList.ContainsKey(newLoc))
-							CloseList.Add (newLoc, new Node(loc, new Location(0,0)));
+						if (!CloseList.ContainsKey (newLoc))
+							CloseList.Add (newLoc, new Node (loc, new Location (0, 0)));
 						break;
 					}
 				}
 				
 				//TODO refactor while do
-				if (!finish) break;
+				if (!finish)
+					break;
 				
 				int sum = int.MaxValue;
 				Location addLoc = null;
@@ -293,20 +298,39 @@ namespace Ants
 				}
 			}
 			
-			//Вышли т.к. не пути
-			Location find;
-			if (finish)
-				find = loc;
-			else
-				find = loc2;
+			Location find = loc1;
 			Location old;
+			
+			
+			if (CloseList.ContainsKey (loc2)) {
+				//Точка достижима
+				find = loc2;
+			} else {
+				//Точка не достижима
+				int h = int.MaxValue;
+				foreach(var item in CloseList.Keys)
+				{
+					if (CloseList[item].Size.col < h)
+					{
+						h = CloseList[item].Size.col;
+						find = item;
+					}
+				}
+				
+			}
 			
 			while (find != loc1) {
 				old = CloseList [find].Parent;
 				directions.InsertRange (0, direction (old, find));
 				find = old;
 			}
-			return directions;			
+
+			
+			return directions;
+			/*
+			//Вышли т.к. не пути
+			
+			/**/
 
 		}
 	}
