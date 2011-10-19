@@ -22,9 +22,13 @@ namespace Ants {
 		}
 		public override bool Equals (object obj)
 		{
+			if (obj == null) return false;
+			//if (obj.GetType() != Ants.Location) return false;
+
 			Location loc = (Location)obj;
-			return (col == loc.col) ;
+			return (this.row == loc.row) && (this.col == loc.col) ;
 		}
+
 	}
 	
 	public class AntLoc : Location {
@@ -41,6 +45,14 @@ namespace Ants {
 		{
 			return row << 14 + col;
 		}
+		public override bool Equals (object obj)
+		{
+			//TODO Может надо учитывать команду
+			if (obj == null) return false;
+			Location loc = obj as Location;
+			if ((System.Object)loc == null) return false;
+			return (this.row == loc.row) && (this.col == loc.col) ;
+		}
 	}
 	
 	public class LocationComparer : IEqualityComparer<Location> {
@@ -49,7 +61,7 @@ namespace Ants {
 		}
 	
 		public int GetHashCode(Location loc) {
-			return loc.row * int.MaxValue + loc.col;
+			return loc.row << 14 + loc.col;
 		}
 	}
 	
