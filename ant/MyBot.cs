@@ -80,19 +80,19 @@ namespace Ants
 					
 					int row = 0;
 					if (ant.row < aimEnemy.row) {
-						row = -2;
+						row = -(2 * state.AttackRadius2);
 					} else if (ant.row == aimEnemy.row) {
 						row = 0;
 					} else {
-						row = 2;
+						row = (2 * state.AttackRadius2);
 					}
 					int col = 0;
 					if (ant.col < aimEnemy.col) {
-						col = -2;
+						col = -(2 * state.AttackRadius2);
 					} else if (ant.col == aimEnemy.col) {
 						col = 0;
 					} else {
-						col = 2;
+						col = (2 * state.AttackRadius2);
 					}
 					aimEnemy = state.destination (ant, new Location (row, col));
 					//aimEnemy = state.destination (aimEnemy, new Location (row, col));
