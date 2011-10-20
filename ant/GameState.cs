@@ -156,7 +156,7 @@ namespace Ants
 		public bool passable (Location loc)
 		{
 			// true if not water
-			return map [loc.row, loc.col] != Tile.Water && map [loc.row, loc.col] != Tile.Hill;
+			return map [loc.row, loc.col] != Tile.Water;// && map [loc.row, loc.col] != Tile.Hill;
 		}
 		
 		public bool unoccupied (Location loc)
@@ -232,7 +232,7 @@ namespace Ants
 			return directions;
 		}
 		
-		public ICollection<char> direction_algor_A (Location loc1, Location loc2)
+		public List<char> direction_algor_A (Location loc1, Location loc2)
 		{
 		
 			IDictionary<Location, Node> OpenList = new Dictionary<Location, Node> ();
@@ -274,6 +274,8 @@ namespace Ants
 				//TODO refactor while do
 				if (!finish)
 					break;
+				if (TimeRemaining < 30)
+					return new List<char>();
 				
 				int sum = int.MaxValue;
 				Location addLoc = null;
@@ -313,7 +315,7 @@ namespace Ants
 					if (CloseList[item].Size.col < h)
 					{
 						h = CloseList[item].Size.col;
-						find = item;
+						find = CloseList[item].Parent;
 					}
 				}
 				

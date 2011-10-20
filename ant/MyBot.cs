@@ -37,11 +37,14 @@ namespace Ants
 			#endif
 			destinations.Clear ();
 			currentTurn.Clear ();
+			//Add Enemy Hill to AIM
 			state.EnemyHills.AddRange (state.EnemyHills);
 			
 			foreach (var ant in state.MyAnts) {
 				
-				int distEnemy = int.MaxValue;
+				//
+				//int distEnemy = int.MaxValue;
+				int distEnemy = state.ViewRadius2 * 2;
 				Location aimEnemy = null;				
 				int dist;
 				int attakEnemy = 0;
@@ -52,7 +55,7 @@ namespace Ants
 						distEnemy = dist;
 						aimEnemy = enemy;
 					}
-					if (dist < state.AttackRadius2 + 2)
+					if (dist <= state.AttackRadius2 + 2)
 						attakEnemy++;
 				}
 				
@@ -65,7 +68,7 @@ namespace Ants
 				int saveDist = state.AttackRadius2 - 1;	
 				foreach (var friends in state.MyAnts) {
 					dist = state.distance (ant, friends);
-					if ((dist < saveDist) && (ant.row != friends.row) && (ant.col != friends.col)) {
+					if ((dist <= saveDist) && (ant.row != friends.row) && (ant.col != friends.col)) {
 						attakFrinds++;
 					}
 				}
@@ -73,7 +76,7 @@ namespace Ants
 				sw.WriteLine (" we " + attakFrinds + " they " + attakEnemy);
 				#endif
 				//I am alone
-				if ((attakFrinds <= attakEnemy) && (aimEnemy != null)) {
+				if ((attakFrinds <= attakEnemy) && (aimEnemy != null) && (distEnemy < state.AttackRadius2 + 1)) {
 					
 					int row = 0;
 					if (ant.row < aimEnemy.row) {
@@ -91,8 +94,8 @@ namespace Ants
 					} else {
 						col = 2;
 					}
-					//aimEnemy = state.destination (ant, new Location (row, col));
-					aimEnemy = state.destination (aimEnemy, new Location (row, col));
+					aimEnemy = state.destination (ant, new Location (row, col));
+					//aimEnemy = state.destination (aimEnemy, new Location (row, col));
 					
 					distEnemy = state.distance (ant, aimEnemy);
 					
@@ -103,6 +106,7 @@ namespace Ants
 					//continue;
 
 				}
+				
 				/**/
 				//int distFood = int.MaxValue;
 				int distFood = state.ViewRadius2 * 2;
@@ -117,86 +121,119 @@ namespace Ants
 
 				#if DEBUG
 				if (aimFood != null) sw.WriteLine (ant + " view food " + aimFood + " dist " + distFood);
+				sw.WriteLine ("view " + (aimFood == null) + " enemy " + (aimEnemy == null));
 				#endif	
+				
 				
 				if ((aimFood == null) && (aimEnemy == null)) {
 					if (oldTurn.ContainsKey (ant)) {
-						currentTurn.Add (ant, oldTurn [ant]);
 						#if DEBUG
 						sw.WriteLine (ant + " goto old aim " + oldTurn[ant]);
 						#endif											
 					} else {
-						//TODO Переделать на радиальный разбег от hill
-						int shaftRow = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
-						int shaftCol = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
-					
-						aimFood = state.destination (ant, new Location (ant.row + shaftRow, ant.col + shaftCol));
+						int shaftRow = 0;
+						int shaftCol = 0;
+						
+						shaftRow = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
+						shaftCol = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
+						aimFood = state.destination (ant, new Location (shaftRow, shaftCol));
 						#if DEBUG
 						sw.WriteLine (ant + " goto new random " + aimFood);
 						#endif					
-						currentTurn.Add (ant, aimFood);
 						oldTurn.Add (ant, aimFood);
 					}
 					continue;
 				}
 				
+				if (oldTurn.ContainsKey(ant)) oldTurn.Remove(ant);
+				
 				if ((aimFood != null) && (aimEnemy != null)) {
-					if (distEnemy < distFood)
+					
+					if (distEnemy < distFood) {
+						
 						currentTurn.Add (ant, aimEnemy);
-					else
+						#if DEBUG
+						sw.WriteLine (ant + " goto enemy " + aimEnemy);
+						#endif	
+					}
+					else {
 						currentTurn.Add (ant, aimFood);
+						#if DEBUG
+						sw.WriteLine (ant + " goto food " + aimFood);
+						#endif	
+					}
 					continue;
 				}
 				if (aimFood == null) {
 					currentTurn.Add (ant, aimEnemy);
 					continue;
 				} else {
+					sw.WriteLine ("ant " + ant + " " + aimFood);
 					currentTurn.Add (ant, aimFood);
 				}
 				
 			}
 			
+			#if DEBUG
+			sw.WriteLine("runs ANTS");
+			#endif	
+			
+			
 			//move ant to thei aim
+			//FIX
 			IDictionary<AntLoc, Location> tempTurn = new Dictionary<AntLoc, Location> ();
 			
-			foreach (AntLoc ant in currentTurn.Keys) {
+			foreach (AntLoc ant in oldTurn.Keys) {
+				if (currentTurn.ContainsKey (ant))
+					currentTurn.Remove (ant);
+				
+				List<char> directions = state.direction_algor_A (ant, oldTurn [ant]);
+				if (directions.Count == 0) {
+					destinations.Add (ant);
+				} else {
+					AntLoc NewAnt = new AntLoc (state.destination (ant, directions[0]), 0);
+					if (!destinations.Contains (NewAnt)) {
+						destinations.Add (NewAnt);
+						issueOrder (ant, directions[0]);
+						tempTurn.Add (NewAnt, oldTurn [ant]);
+					} else {
+						tempTurn.Add (ant, oldTurn [ant]);
+					}
+	
+				}/**/
+				if (state.TimeRemaining < 50)					
+					return;
+			}
 			
-				IEnumerable<char> directions = state.direction_algor_A (ant, currentTurn [ant]);
+			
+			oldTurn = tempTurn;
+			
+			foreach (AntLoc ant in currentTurn.Keys) {
+				
+				List<char> directions = state.direction_algor_A (ant, currentTurn [ant]);
 				
 				//FIXME clearn after write
 				string st = "";
 				foreach (char cc in directions) {
 					st = st + cc;
+					break;
 				}
-				#if DEBUG
-				sw.WriteLine (ant + " aim " + currentTurn [ant] + " goto " + st);
-				#endif
-				/**/
 				//FIXME HACK
-				if (st.Length == 0) {
+				if (directions.Count == 0) {
 					destinations.Add (ant);
 				} else {
-					
-					foreach (char direction in directions) {
-						AntLoc NewAnt = new AntLoc (state.destination (ant, direction), 0);
-					
-						if (!destinations.Contains (NewAnt)) {
-							destinations.Add (NewAnt);
-							issueOrder (ant, direction);
-							
-							if (oldTurn.ContainsKey (ant))
-								tempTurn.Add (NewAnt, oldTurn [ant]);
-						} else {
-							if (oldTurn.ContainsKey (ant))
-								tempTurn.Add (ant, oldTurn [ant]);
-						}
-						break;
+					AntLoc NewAnt = new AntLoc (state.destination (ant, directions [0]), 0);
+				
+					if (!destinations.Contains (NewAnt)) {
+						destinations.Add (NewAnt);
+						issueOrder (ant, directions[0]);
 					}
 				}
-				if (state.TimeRemaining < 10)					
-					break;
+				
+				if (state.TimeRemaining < 50)					
+					return;
 			}
-			oldTurn = tempTurn;
+			
 		}
 		
 		public static void Main (string[] args)
