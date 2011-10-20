@@ -189,10 +189,14 @@ namespace Ants
 				
 				List<char> directions = state.direction_algor_A (ant, oldTurn [ant]);
 				if (directions.Count == 0) {
+					//добавление препядствия
+					state.addAnt(ant.row, ant.col, 0);
 					destinations.Add (ant);
 				} else {
 					AntLoc NewAnt = new AntLoc (state.destination (ant, directions[0]), 0);
 					if (!destinations.Contains (NewAnt)) {
+						//добавление препядствия
+						state.addAnt(NewAnt.row, NewAnt.col, 0);
 						destinations.Add (NewAnt);
 						issueOrder (ant, directions[0]);
 						tempTurn.Add (NewAnt, oldTurn [ant]);
@@ -221,11 +225,13 @@ namespace Ants
 				//FIXME HACK
 				if (directions.Count == 0) {
 					destinations.Add (ant);
+					state.addAnt(ant.row, ant.col, 0);
 				} else {
 					AntLoc NewAnt = new AntLoc (state.destination (ant, directions [0]), 0);
 				
 					if (!destinations.Contains (NewAnt)) {
 						destinations.Add (NewAnt);
+						state.addAnt(NewAnt.row, NewAnt.col, 0);
 						issueOrder (ant, directions[0]);
 					}
 				}
