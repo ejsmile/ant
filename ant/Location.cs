@@ -18,7 +18,8 @@ namespace Ants {
 		}
 		public override int GetHashCode ()
 		{
-			return row << 14 + col;
+			return row << 10 + col;
+			//return this.row * int.MaxValue + this.col;
 		}
 		public override bool Equals (object obj)
 		{
@@ -43,7 +44,8 @@ namespace Ants {
 		
 		public override int GetHashCode ()
 		{
-			return row << 14 + col;
+			return row << 10 + col;
+			//return this.row * int.MaxValue + this.col;
 		}
 		public override bool Equals (object obj)
 		{
@@ -61,7 +63,8 @@ namespace Ants {
 		}
 	
 		public int GetHashCode(Location loc) {
-			return loc.row << 14 + loc.col;
+			return loc.row << 10 + loc.col;
+			//return loc.row * int.MaxValue + loc.col;
 		}
 	}
 	
