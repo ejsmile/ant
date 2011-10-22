@@ -167,7 +167,7 @@ namespace Ants
 		
 		public Location destination (Location loc, Location delta)
 		{
-					// calculate a new location given the direction and wrap correctly
+			// calculate a new location given the direction and wrap correctly
 			int row = (loc.row + delta.row) % Height;
 			if (row < 0)
 				row += Height; // because the modulo of a negative number is negative
@@ -181,7 +181,7 @@ namespace Ants
 		
 		public Location destination (Location loc, char direction)
 		{
-			return destination(loc, Ants.Aim [direction]);
+			return destination (loc, Ants.Aim [direction]);
 			
 		}
 		
@@ -202,7 +202,7 @@ namespace Ants
 			// determine the 1 or 2 fastest (closest) directions to reach a location
 
 			
-			List<char> directions = new List<char> ();
+			List<char > directions = new List<char> ();
 			if (loc1.row < loc2.row) {
 				if (loc2.row - loc1.row >= Height / 2)
 					directions.Add ('n');
@@ -234,18 +234,21 @@ namespace Ants
 		
 		public List<char> direction_algor_A (Location loc1, Location loc2)
 		{
-		
-			IDictionary<Location, Node> OpenList = new Dictionary<Location, Node> ();
-			IDictionary<Location, Node> CloseList = new Dictionary<Location, Node> ();
-			List<char> directions = new List<char> ();
-			
+			//Открытий список вершин по которым идет поиск
+			IDictionary<Location, Node > OpenList = new Dictionary<Location, Node> ();
+			//Закрытий список вершин поиск завершен
+			IDictionary<Location, Node > CloseList = new Dictionary<Location, Node> ();
+			//Оптимизация поиска по массиву открытих вершин
+			IDictionary<int,List<Location >> Tree = new Dictionary<int, List<Location>> (); 
+			List<char > directions = new List<char> ();
+			//начальная точка
 			CloseList.Add (loc1, new Node (loc1, new Location (0, distance (loc1, loc2))));
 			
 			Location loc = loc1;
 
 			bool finish = true;
 			DateTime start = DateTime.Now;
-			
+			int head = int.MaxValue;
 			while (finish) {
 				
 				foreach (char c in Ants.Aim.Keys) {
@@ -254,12 +257,27 @@ namespace Ants
 						
 					if (unoccupied (newLoc) && !CloseList.Keys.Contains (newLoc)) {
 						Location size = new Location (CloseList [loc].Size.row + 1, distance (newLoc, loc2));
+						
+						int f = size.row + size.col;
+						if (f < head)
+							head = f;
+						if (!Tree.ContainsKey (f))
+							Tree.Add (f, new List<Location> ());
+						
 						if (OpenList.ContainsKey (newLoc)) {
+							
 							if (size.row < OpenList [newLoc].Size.row) {
+								//Смена значание Node требует смены индекса в дереве
+								int ff = OpenList [newLoc].Size.row + OpenList [newLoc].Size.col; 
+								Tree [ff].Remove (newLoc);
+								if (Tree [ff].Count == 0)
+									Tree.Remove (ff);
 								OpenList [newLoc] = new Node (loc, size);
+								Tree [f].Add (newLoc);
 							}
 						} else {
 							OpenList.Add (newLoc, new Node (loc, size));
+							Tree [f].Add (newLoc);	
 						}
 					}
 					
@@ -275,27 +293,27 @@ namespace Ants
 				//TODO refactor while do
 				if (!finish)
 					break;
-				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime/20))
-					return new List<char>();
-				
-				int sum = int.MaxValue;
-				Location addLoc = null;
-				
-				foreach (var item in OpenList.Keys) {
-					Node tmp = OpenList [item];
-					
-
-					if ((tmp.Size.col + tmp.Size.row) < sum) {
-						sum = tmp.Size.col + tmp.Size.row;
-						addLoc = item;
+				//Пытаемся двинуть 20 ant в ход
+				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
+					return new List<char> ();
+				if (Tree.Keys.Count > 0) {
+					loc = Tree [head] [0];
+					//HACK find lost location in Tree надо найти пока поставлен
+					if (OpenList.ContainsKey (loc)) {
+						CloseList.Add (loc, OpenList [loc]);
+						OpenList.Remove (loc);
+						Tree [head].Remove (loc);
+					} else {
+						throw new Exception ("Error!!!");
 					}
-				}
-				
-				if (addLoc != null) {
-					CloseList.Add (addLoc, OpenList [addLoc]);
-					OpenList.Remove (addLoc);
-					
-					loc = addLoc;
+					if (Tree [head].Count == 0) {
+						Tree.Remove (head);
+						head = int.MaxValue;
+						foreach (var item in Tree.Keys) {
+							if (item < head)
+								head = item;
+						}
+					}
 				} else {
 					break;
 				}
@@ -311,12 +329,10 @@ namespace Ants
 			} else {
 				//Точка не достижима
 				int h = int.MaxValue;
-				foreach(var item in CloseList.Keys)
-				{
-					if (CloseList[item].Size.col < h)
-					{
-						h = CloseList[item].Size.col;
-						find = CloseList[item].Parent;
+				foreach (var item in CloseList.Keys) {
+					if (CloseList [item].Size.col < h) {
+						h = CloseList [item].Size.col;
+						find = CloseList [item].Parent;
 					}
 				}
 				
