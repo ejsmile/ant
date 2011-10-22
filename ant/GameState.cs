@@ -244,6 +244,7 @@ namespace Ants
 			Location loc = loc1;
 
 			bool finish = true;
+			DateTime start = DateTime.Now;
 			
 			while (finish) {
 				
@@ -274,7 +275,7 @@ namespace Ants
 				//TODO refactor while do
 				if (!finish)
 					break;
-				if (TimeRemaining < 30)
+				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime/20))
 					return new List<char>();
 				
 				int sum = int.MaxValue;
