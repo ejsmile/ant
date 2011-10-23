@@ -63,12 +63,15 @@ namespace Ants
 				if (aimEnemy != null) sw.WriteLine (ant + " view enemy " + aimEnemy + " dist " + distEnemy);
 				#endif	
 				
+				
 				//find frinds in  state.AttackRadius2
 				int attakFrinds = 0;
-				int saveDist = state.AttackRadius2 - 1;	
+				int saveDist = state.AttackRadius2 + 1;	
+				if (aimEnemy != null)
 				foreach (var friends in state.MyAnts) {
-					dist = state.distance (ant, friends);
-					if ((dist <= saveDist) && (ant.row != friends.row) && (ant.col != friends.col)) {
+					dist = state.distance (aimEnemy, friends);
+					if (dist <= saveDist){ 
+						//&& (ant.row != friends.row) && (ant.col != friends.col)) {
 						attakFrinds++;
 					}
 				}
@@ -94,8 +97,8 @@ namespace Ants
 					} else {
 						col = (2 * state.AttackRadius2);
 					}
-					aimEnemy = state.destination (ant, new Location (row, col));
-					//aimEnemy = state.destination (aimEnemy, new Location (row, col));
+					//aimEnemy = state.destination (ant, new Location (row, col));
+					aimEnemy = state.destination (aimEnemy, new Location (row, col));
 					
 					distEnemy = state.distance (ant, aimEnemy);
 					
@@ -109,7 +112,7 @@ namespace Ants
 				
 				/**/
 				//int distFood = int.MaxValue;
-				int distFood = state.ViewRadius2 * 2;
+				int distFood = state.ViewRadius2;
 				Location aimFood = null;
 				
 				foreach (var food in state.FoodTiles) {
@@ -133,9 +136,9 @@ namespace Ants
 					} else {
 						int shaftRow = 0;
 						int shaftCol = 0;
-						
-						shaftRow = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
-						shaftCol = (state.ViewRadius2 + rng.Next (state.ViewRadius2 * 2)) * ((-1) ^ rng.Next (2));
+						//Создать разброд муравьев
+						shaftRow = (state.ViewRadius2 * 2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (2));
+						shaftCol = (state.ViewRadius2 * 2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (2));
 						aimFood = state.destination (ant, new Location (shaftRow, shaftCol));
 						#if DEBUG
 						sw.WriteLine (ant + " goto new random " + aimFood);
@@ -150,8 +153,9 @@ namespace Ants
 				if ((aimFood != null) && (aimEnemy != null)) {
 					
 					if (distEnemy < distFood) {
-						
-						currentTurn.Add (ant, aimEnemy);
+						//Проверить экспаериментом типа режима мести или поиска
+						//currentTurn.Add (ant, aimEnemy);
+						oldTurn.Add (ant, aimEnemy);
 						#if DEBUG
 						sw.WriteLine (ant + " goto enemy " + aimEnemy);
 						#endif	
@@ -164,9 +168,10 @@ namespace Ants
 					}
 					continue;
 				}
+				//Проверить экспериментом
 				if (aimFood == null) {
-					currentTurn.Add (ant, aimEnemy);
-					continue;
+					//currentTurn.Add (ant, aimEnemy);
+					oldTurn.Add (ant, aimEnemy);
 				} else {
 					sw.WriteLine ("ant " + ant + " " + aimFood);
 					currentTurn.Add (ant, aimFood);
@@ -216,13 +221,6 @@ namespace Ants
 				
 				List<char> directions = state.direction_algor_A (ant, currentTurn [ant]);
 				
-				//FIXME clearn after write
-				string st = "";
-				foreach (char cc in directions) {
-					st = st + cc;
-					break;
-				}
-				//FIXME HACK
 				if (directions.Count == 0) {
 					destinations.Add (ant);
 					state.addAnt(ant.row, ant.col, 0);
