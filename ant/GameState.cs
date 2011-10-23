@@ -259,10 +259,6 @@ namespace Ants
 						Location size = new Location (CloseList [loc].Size.row + 1, distance (newLoc, loc2));
 						
 						int f = size.row + size.col;
-						if (f < head)
-							head = f;
-						if (!Tree.ContainsKey (f))
-							Tree.Add (f, new List<Location> ());
 						
 						if (OpenList.ContainsKey (newLoc)) {
 							
@@ -273,10 +269,16 @@ namespace Ants
 								if (Tree [ff].Count == 0)
 									Tree.Remove (ff);
 								OpenList [newLoc] = new Node (loc, size);
+
+								if (f < head) head = f;
+								if (!Tree.ContainsKey (f)) Tree.Add (f, new List<Location> ());								
 								Tree [f].Add (newLoc);
 							}
 						} else {
 							OpenList.Add (newLoc, new Node (loc, size));
+							if (f < head)	head = f;
+							if (!Tree.ContainsKey (f)) Tree.Add (f, new List<Location> ());
+						
 							Tree [f].Add (newLoc);	
 						}
 					}
@@ -293,9 +295,7 @@ namespace Ants
 				//TODO refactor while do
 				if (!finish)
 					break;
-				//Пытаемся двинуть 20 ant в ход
-				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
-					return new List<char> ();
+				
 				if (Tree.Keys.Count > 0) {
 					loc = Tree [head] [0];
 					//HACK find lost location in Tree надо найти пока поставлен
@@ -317,6 +317,14 @@ namespace Ants
 				} else {
 					break;
 				}
+				//} catch (Exception ex)
+				//{
+				//	throw new Exception("tyt", ex);
+				//}
+				//Пытаемся двинуть 20 ant в ход
+				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
+					return new List<char> ();
+
 			}
 			
 			Location find = loc1;
@@ -330,7 +338,7 @@ namespace Ants
 				//Точка не достижима
 				int h = int.MaxValue;
 				foreach (var item in CloseList.Keys) {
-					if (CloseList [item].Size.col < h) {
+					if ((CloseList [item].Size.col < h) && (item.row != loc1.row) && (item.col != loc1.col)) {
 						h = CloseList [item].Size.col;
 						find = CloseList [item].Parent;
 					}
