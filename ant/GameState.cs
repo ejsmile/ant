@@ -73,10 +73,12 @@ namespace Ants
 			turnStart = DateTime.Now;
 			
 			// clear ant data
-			foreach (Location loc in MyAnts)
+			foreach (AntLoc loc in MyAnts) {
 				map [loc.row, loc.col] = Tile.Land;
-			foreach (Location loc in EnemyAnts)
-				map [loc.row, loc.col] = Tile.Land;
+				if (EnemyHills.Contains(loc)) map [loc.row, loc.col] = Tile.Land;
+			}
+			//foreach (Location loc in EnemyAnts)
+			//	map [loc.row, loc.col] = Tile.Land;
 			foreach (Location loc in MyHills)
 				map [loc.row, loc.col] = Tile.Land;
 			foreach (Location loc in EnemyHills)

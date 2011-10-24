@@ -37,13 +37,41 @@ namespace Ants
 			#endif
 			destinations.Clear ();
 			currentTurn.Clear ();
+			Location[] hod = new Location[] {new Location (0, -state.AttackRadius2), new Location (0, state.AttackRadius2),	new Location (-state.AttackRadius2, 0),
+				new Location (state.AttackRadius2, 0) ,new Location (-state.AttackRadius2 / 2, -state.AttackRadius2 / 2), 
+				new Location (state.AttackRadius2 / 2, state.AttackRadius2 / 2),	new Location (state.AttackRadius2 / 2, -state.AttackRadius2 / 2),
+				new Location (-state.AttackRadius2 / 2, state.AttackRadius2 / 2)};
+			
+
+			//Food
+			foreach (var food in state.FoodTiles) {
+				int dist = int.MaxValue;
+				AntLoc antFood = null;
+			
+				foreach (var ant in state.MyAnts) {
+					if (!currentTurn.ContainsKey (ant))
+					if (state.distance (ant, food) < dist) {
+						dist = state.distance (ant, food);
+						antFood = ant;
+					}
+					
+				}
+				if (antFood != null) {
+					currentTurn.Add (antFood, food);
+					#if DEBUG
+					sw.WriteLine (" ant " + antFood + " food " + food);
+					#endif	
+					
+				} else
+					break;
+			}
+
+			
 			//Add Enemy Hill to AIM
 			state.EnemyHills.AddRange (state.EnemyHills);
 			
+			//find Enemy aim 
 			foreach (var ant in state.MyAnts) {
-				
-				//
-				//int distEnemy = int.MaxValue;
 				int distEnemy = state.ViewRadius2 * 2;
 				Location aimEnemy = null;				
 				int dist;
@@ -55,188 +83,123 @@ namespace Ants
 						distEnemy = dist;
 						aimEnemy = enemy;
 					}
-					if (dist <= state.AttackRadius2 + 2)
+					if (dist < state.AttackRadius2)
 						attakEnemy++;
 				}
 				
-				#if DEBUG
-				if (aimEnemy != null) sw.WriteLine (ant + " view enemy " + aimEnemy + " dist " + distEnemy);
-				#endif	
+				if (aimEnemy != null) {
 				
-				
-				//find frinds in  state.AttackRadius2
-				int attakFrinds = 0;
-				int saveDist = state.AttackRadius2 + 1;	
-				if (aimEnemy != null)
-				foreach (var friends in state.MyAnts) {
-					dist = state.distance (aimEnemy, friends);
-					if (dist <= saveDist){ 
-						//&& (ant.row != friends.row) && (ant.col != friends.col)) {
-						attakFrinds++;
-					}
-				}
-				#if DEBUG
-				sw.WriteLine (" we " + attakFrinds + " they " + attakEnemy);
-				#endif
-				//I am alone
-				if ((attakFrinds <= attakEnemy) && (aimEnemy != null) && (distEnemy < state.AttackRadius2 + 1)) {
-					
-					int row = 0;
-					if (ant.row < aimEnemy.row) {
-						row = -(2 * state.AttackRadius2);
-					} else if (ant.row == aimEnemy.row) {
-						row = 0;
-					} else {
-						row = (2 * state.AttackRadius2);
-					}
-					int col = 0;
-					if (ant.col < aimEnemy.col) {
-						col = -(2 * state.AttackRadius2);
-					} else if (ant.col == aimEnemy.col) {
-						col = 0;
-					} else {
-						col = (2 * state.AttackRadius2);
-					}
-					//aimEnemy = state.destination (ant, new Location (row, col));
-					aimEnemy = state.destination (aimEnemy, new Location (row, col));
-					
-					distEnemy = state.distance (ant, aimEnemy);
-					
-					//
+					//find frinds in  state.AttackRadius2
+					int attakFrinds = 0;
+					int saveDist = state.AttackRadius2 + 1;	
+					if (aimEnemy != null)
+						foreach (var friends in state.MyAnts) {
+							dist = state.distance (aimEnemy, friends);
+							if (dist < saveDist) { 
+								attakFrinds++;
+							}
+						}
 					#if DEBUG
-					sw.WriteLine (ant + " run " + aimEnemy + " dist ");
-					#endif	
-					//continue;
-
-				}
-				
-				/**/
-				//int distFood = int.MaxValue;
-				int distFood = state.ViewRadius2;
-				Location aimFood = null;
-				
-				foreach (var food in state.FoodTiles) {
-					if (state.distance (ant, food) < distFood) {
-						distFood = state.distance (ant, food);
-						aimFood = food;
-					}			
-				}
-
-				#if DEBUG
-				if (aimFood != null) sw.WriteLine (ant + " view food " + aimFood + " dist " + distFood);
-				sw.WriteLine ("view " + (aimFood == null) + " enemy " + (aimEnemy == null));
-				#endif	
-				
-				
-				if ((aimFood == null) && (aimEnemy == null)) {
-					if (oldTurn.ContainsKey (ant)) {
-						#if DEBUG
-						sw.WriteLine (ant + " goto old aim " + oldTurn[ant]);
-						#endif											
-					} else {
-						int shaftRow = 0;
-						int shaftCol = 0;
-						//Создать разброд муравьев
-						shaftRow = (state.ViewRadius2 * 2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (2));
-						shaftCol = (state.ViewRadius2 * 2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (2));
-						aimFood = state.destination (ant, new Location (shaftRow, shaftCol));
-						#if DEBUG
-						sw.WriteLine (ant + " goto new random " + aimFood);
-						#endif					
-						oldTurn.Add (ant, aimFood);
-					}
-					continue;
-				}
-				
-				if (oldTurn.ContainsKey(ant)) oldTurn.Remove(ant);
-				
-				if ((aimFood != null) && (aimEnemy != null)) {
+					sw.WriteLine (" we " + attakFrinds + " they " + attakEnemy);
+					#endif
 					
-					if (distEnemy < distFood) {
-						//Проверить экспаериментом типа режима мести или поиска
-						//currentTurn.Add (ant, aimEnemy);
-						oldTurn.Add (ant, aimEnemy);
+					//I am alone
+					if ((attakFrinds <= attakEnemy) && (aimEnemy != null) && (distEnemy < state.AttackRadius2 + 2)) {
+					
+						int runDist = distEnemy;
+						Location runLoc = null;
+						foreach (Location loc in hod) {
+							Location newLoc = state.destination (ant, loc);
+							if (state.unoccupied (newLoc)) {
+								if (runDist < state.distance (newLoc, aimEnemy)) {
+									runDist = state.distance (newLoc, aimEnemy);
+									runLoc = newLoc;
+								}
+							}
+						}
+						if (runLoc != null) {
+							aimEnemy = runLoc;
+							distEnemy = runDist;
+						}
 						#if DEBUG
-						sw.WriteLine (ant + " goto enemy " + aimEnemy);
-						#endif	
+						sw.WriteLine (" ant " + ant + " run  from enemy to " + aimEnemy);
+						#endif				
 					}
-					else {
-						currentTurn.Add (ant, aimFood);
-						#if DEBUG
-						sw.WriteLine (ant + " goto food " + aimFood);
-						#endif	
-					}
-					continue;
+					/**/
+					if (currentTurn.ContainsKey (ant)) {
+						int tmp = state.distance (ant, currentTurn [ant]);
+						if (tmp > distEnemy) {
+							Location food = currentTurn [ant];
+							currentTurn [ant] = aimEnemy;
+							aimEnemy = null;
+							tmp = int.MaxValue;
+							
+							foreach (var ants in state.MyAnts) {
+								if (!currentTurn.ContainsKey (ants) && (state.distance (ant, food) < tmp)) {
+									tmp = state.distance (ant, food);
+									aimEnemy = ants;
+								}
+							}
+							if (aimEnemy != null)
+								currentTurn.Add (new AntLoc (aimEnemy, 0), food);
+						}
+					} else
+						currentTurn.Add (ant, aimEnemy);
 				}
-				//Проверить экспериментом
-				if (aimFood == null) {
-					//currentTurn.Add (ant, aimEnemy);
-					oldTurn.Add (ant, aimEnemy);
-				} else {
-					sw.WriteLine ("ant " + ant + " " + aimFood);
-					currentTurn.Add (ant, aimFood);
-				}
+			}
+			
+			//move other ants
+			foreach (var ant in state.MyAnts) {
+				if (!currentTurn.ContainsKey (ant)) {
+					int shaftRow = (state.ViewRadius2 + (state.ViewRadius2)) * ((-1) ^ rng.Next (4));
+					int shaftCol = (state.ViewRadius2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (4));
+					Location aim = state.destination (ant, new Location (shaftRow, shaftCol));
 				
+					if (oldTurn.ContainsKey (ant)) 
+					if ((ant.row != oldTurn [ant].row) && (ant.col != oldTurn [ant].col))
+						aim = oldTurn [ant];
+					currentTurn.Add (ant, aim);
+					#if DEBUG
+					sw.WriteLine (" ant " + ant + " move " + aim);
+					#endif	
+				}			
 			}
 			
 			#if DEBUG
 			sw.WriteLine("runs ANTS");
 			#endif	
 			
-			
-			//move ant to thei aim
-			//FIX
-			IDictionary<AntLoc, Location> tempTurn = new Dictionary<AntLoc, Location> ();
-			
-			foreach (AntLoc ant in oldTurn.Keys) {
-				if (currentTurn.ContainsKey (ant))
-					currentTurn.Remove (ant);
-				
-				List<char> directions = state.direction_algor_A (ant, oldTurn [ant]);
-				if (directions.Count == 0) {
-					//добавление препядствия
-					state.addAnt(ant.row, ant.col, 0);
-					destinations.Add (ant);
-				} else {
-					AntLoc NewAnt = new AntLoc (state.destination (ant, directions[0]), 0);
-					if (!destinations.Contains (NewAnt)) {
-						//добавление препядствия
-						state.addAnt(NewAnt.row, NewAnt.col, 0);
-						destinations.Add (NewAnt);
-						issueOrder (ant, directions[0]);
-						tempTurn.Add (NewAnt, oldTurn [ant]);
-					} else {
-						tempTurn.Add (ant, oldTurn [ant]);
-					}
-	
-				}/**/
-				if (state.TimeRemaining < 50)					
-					return;
-			}
-			
-			
-			oldTurn = tempTurn;
+			oldTurn = new Dictionary<AntLoc, Location> ();
 			
 			foreach (AntLoc ant in currentTurn.Keys) {
-				
 				List<char> directions = state.direction_algor_A (ant, currentTurn [ant]);
 				
 				if (directions.Count == 0) {
-					destinations.Add (ant);
-					state.addAnt(ant.row, ant.col, 0);
+					//добавление препядствия
+					state.addAnt (ant.row, ant.col, 0);
+					#if DEBUG
+					sw.WriteLine (" ant " + ant + " stop ");
+					#endif	
 				} else {
 					AntLoc NewAnt = new AntLoc (state.destination (ant, directions [0]), 0);
-				
-					if (!destinations.Contains (NewAnt)) {
-						destinations.Add (NewAnt);
-						state.addAnt(NewAnt.row, NewAnt.col, 0);
-						issueOrder (ant, directions[0]);
+					//странно пытаемся переститься на своего муровья
+					if (!oldTurn.ContainsKey (NewAnt)) {
+						issueOrder (ant, directions [0]);
+						//добавление препядствия
+						state.addAnt (NewAnt.row, NewAnt.col, 0);
+						oldTurn.Add (NewAnt, currentTurn [ant]);
+						#if DEBUG
+						sw.WriteLine (" ant " + ant + " move " + NewAnt);
+						#endif						
 					}
-				}
+				}/**/
 				
-				if (state.TimeRemaining < 50)					
+				if (state.TimeRemaining < 50) {
 					return;
+				}
 			}
+			
+			
 			
 		}
 		
