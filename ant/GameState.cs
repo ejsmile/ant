@@ -29,6 +29,7 @@ namespace Ants
 
 		public int SpawnRadius2 { get; private set; }
 		
+		public List<Location> Discovery;
 		public List<AntLoc> MyAnts;
 		public List<AntLoc> EnemyAnts;
 		public List<AntLoc> MyHills;
@@ -63,6 +64,13 @@ namespace Ants
 			for (int row = 0; row < height; row++) {
 				for (int col = 0; col < width; col++) {
 					map [row, col] = Tile.Land;
+				}
+			}
+			
+			Discovery = new List<Location>();
+			for (int row = 0; row < height / viewradius2; row++) {
+				for (int col = 0; col < width / viewradius2; col++) {
+					Discovery.Add(row, col);
 				}
 			}
 		}
@@ -284,30 +292,13 @@ namespace Ants
 							Tree [f].Add (newLoc);	
 						}
 					}
-					
-					//FIXME проверка вхождения 
-					if ((newLoc.row == loc2.row) && (newLoc.col == loc2.col) && passable (newLoc)) {
-						finish = false;
-						if (!CloseList.ContainsKey (newLoc))
-							CloseList.Add (newLoc, new Node (loc, new Location (0, 0)));
-						break;
-					}
 				}
-				
-				//TODO refactor while do
-				if (!finish)
-					break;
-				
 				if (Tree.Keys.Count > 0) {
+					//loc = Tree [head] [Tree[head].Count - 1];
 					loc = Tree [head] [0];
-					//HACK find lost location in Tree надо найти пока поставлен
-					if (OpenList.ContainsKey (loc)) {
-						CloseList.Add (loc, OpenList [loc]);
-						OpenList.Remove (loc);
-						Tree [head].Remove (loc);
-					} else {
-						throw new Exception ("Error!!!");
-					}
+					CloseList.Add (loc, OpenList [loc]);
+					OpenList.Remove (loc);
+					Tree [head].Remove (loc);
 					if (Tree [head].Count == 0) {
 						Tree.Remove (head);
 						head = int.MaxValue;
@@ -319,14 +310,12 @@ namespace Ants
 				} else {
 					break;
 				}
-				//} catch (Exception ex)
-				//{
-				//	throw new Exception("tyt", ex);
-				//}
-				//Пытаемся двинуть 20 ant в ход
+
 				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
 					return new List<char> ();
-
+				
+				if (CloseList.ContainsKey (loc2))
+					finish = false;
 			}
 			
 			Location find = loc1;
@@ -340,7 +329,7 @@ namespace Ants
 				//Точка не достижима
 				int h = int.MaxValue;
 				foreach (var item in CloseList.Keys) {
-					if ((CloseList [item].Size.col < h) && (item.row != loc1.row) && (item.col != loc1.col)) {
+					if ((CloseList [item].Size.col < h) && ((item.row != loc1.row) || (item.col != loc1.col))) {
 						h = CloseList [item].Size.col;
 						find = CloseList [item].Parent;
 					}
