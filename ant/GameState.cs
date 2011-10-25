@@ -68,9 +68,9 @@ namespace Ants
 			}
 			
 			Discovery = new List<Location>();
-			for (int row = 0; row < height / viewradius2; row++) {
-				for (int col = 0; col < width / viewradius2; col++) {
-					Discovery.Add(row, col);
+			for (int row = 0; row < height / (viewradius2 / 2); row++) {
+				for (int col = 0; col < width / (viewradius2 / 2); col++) {
+					Discovery.Add(new Location(row, col));
 				}
 			}
 		}
@@ -82,8 +82,10 @@ namespace Ants
 			
 			// clear ant data
 			foreach (AntLoc loc in MyAnts) {
+				Location tmp = new Location(loc.row / (ViewRadius2 / 2), loc.col / (ViewRadius2 / 2));
 				map [loc.row, loc.col] = Tile.Land;
 				if (EnemyHills.Contains(loc)) map [loc.row, loc.col] = Tile.Land;
+				if (Discovery.Contains(tmp)) Discovery.Remove(tmp);
 			}
 			//foreach (Location loc in EnemyAnts)
 			//	map [loc.row, loc.col] = Tile.Land;
@@ -278,6 +280,14 @@ namespace Ants
 								Tree [ff].Remove (newLoc);
 								if (Tree [ff].Count == 0)
 									Tree.Remove (ff);
+								if (ff == head) {
+									head = int.MaxValue;
+									foreach (var item in Tree.Keys) {
+									if (item < head)
+									head = item;
+									}
+								}
+								
 								OpenList [newLoc] = new Node (loc, size);
 
 								if (f < head) head = f;
@@ -311,8 +321,9 @@ namespace Ants
 					break;
 				}
 
-				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
-					return new List<char> ();
+				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 10))
+					//return new List<char> ();
+					break;
 				
 				if (CloseList.ContainsKey (loc2))
 					finish = false;

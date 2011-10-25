@@ -134,9 +134,7 @@ namespace Ants
 					#endif
 					
 					//I am alone
-					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 2)) {	
-						//&& (!state.EnemyHills.Contains(new AntLoc(aimEnemy.col, aimEnemy.row, 1)))) {
-					
+					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 3) && (attakFrinds < 4)) {	
 						int runDist = distEnemy;
 						Location runLoc = null;
 						foreach (Location loc in hod) {
@@ -183,10 +181,26 @@ namespace Ants
 			#region Move other ants
 			foreach (var ant in state.MyAnts) {
 				if (!currentTurn.ContainsKey (ant)) {
+					
 					Location aim = smeshnie [rng.Next (4)];
-					if (oldTurn.ContainsKey (ant)) 
-					if ((ant.row != oldTurn [ant].row) && (ant.col != oldTurn [ant].col))
-						aim = oldTurn [ant];
+					if (state.Discovery.Count > 0) {
+						int dist = int.MaxValue;
+						foreach (var loc in state.Discovery) {
+							Location aimTmp = new Location (loc.row * (state.ViewRadius2 / 2), loc.col * (state.ViewRadius2 / 2));
+							int tmp = state.distance (aimTmp, ant);
+							if (tmp < dist) {
+								dist = tmp;
+								aim = aimTmp;
+							}
+						}
+					} 					
+					if (oldTurn.ContainsKey (ant)) {
+						//if ((ant.row != oldTurn [ant].row) && (ant.col != oldTurn [ant].col))
+						if (state.distance(ant, oldTurn [ant]) > (state.ViewRadius2 / 2)) {
+							aim = oldTurn [ant];
+						}
+					}
+					
 					currentTurn.Add (ant, aim);
 					#if DEBUG
 					sw.WriteLine (" ant " + ant + " move " + aim);
