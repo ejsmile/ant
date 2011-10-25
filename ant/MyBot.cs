@@ -19,7 +19,7 @@ namespace Ants
 		
 		public MyBot ()
 		{
-			rng = new Random (42);
+			rng = new Random (42 + 42);
 			destinations = new HashSet<Location> (new LocationComparer ());
 			currentTurn = new Dictionary<AntLoc, Location> ();
 			oldTurn = new Dictionary<AntLoc, Location> ();
@@ -37,13 +37,42 @@ namespace Ants
 			#endif
 			destinations.Clear ();
 			currentTurn.Clear ();
-			Location[] hod = new Location[] {new Location (0, -state.AttackRadius2), new Location (0, state.AttackRadius2),	new Location (-state.AttackRadius2, 0),
-				new Location (state.AttackRadius2, 0) ,new Location (-state.AttackRadius2 / 2, -state.AttackRadius2 / 2), 
-				new Location (state.AttackRadius2 / 2, state.AttackRadius2 / 2),	new Location (state.AttackRadius2 / 2, -state.AttackRadius2 / 2),
-				new Location (-state.AttackRadius2 / 2, state.AttackRadius2 / 2)};
 			
+			
+			Location[] hod = new Location[] {new Location (0, -state.ViewRadius2 - 1), new Location (0, state.ViewRadius2 + 1),	
+				new Location (-state.ViewRadius2 - 1, 0), new Location (state.ViewRadius2 + 1, 0) ,
+				new Location (-state.ViewRadius2 / 2 - 1, -state.ViewRadius2 / 2 + 1), 
+				new Location (state.ViewRadius2 / 2 + 1, state.ViewRadius2 / 2 + 1),	
+				new Location (state.ViewRadius2 / 2 + 1, -state.ViewRadius2 / 2 - 1),
+				new Location (-state.ViewRadius2 / 2 - 1, state.ViewRadius2 / 2 + 1)};
+			/**/
+			
+			/*
+			Location[] hod = new Location[] {new Location (0, -state.AttackRadius2 - 1), new Location (0, state.AttackRadius2 + 1),	
+				new Location (-state.AttackRadius2 - 1, 0), new Location (state.AttackRadius2 + 1, 0) ,
+				new Location (-state.AttackRadius2 / 2 - 1, -state.AttackRadius2 / 2 + 1), 
+				new Location (state.AttackRadius2 / 2 + 1, state.AttackRadius2 / 2 + 1),	
+				new Location (state.AttackRadius2 / 2 + 1, -state.AttackRadius2 / 2 - 1),
+				new Location (-state.AttackRadius2 / 2 - 1, state.AttackRadius2 / 2 + 1)};
+			/**/
+			Location[] smeshnie = new Location[] {new Location (0, -state.ViewRadius2 - rng.Next (state.ViewRadius2)), 
+				new Location (0, state.ViewRadius2 + rng.Next (state.ViewRadius2)),	
+				new Location (-state.ViewRadius2 - rng.Next (state.ViewRadius2), 0), 
+				new Location (state.ViewRadius2 + rng.Next (state.ViewRadius2), 0)};
+			
+			//Find Guard
+			IDictionary<AntLoc, Location> Guard = new Dictionary<AntLoc, Location> ();
+			foreach (var hill in state.MyHills) {
+				foreach (var dest in Ants.Aim.Keys) {
+					Location loc = state.destination (hill, dest);
+					if (state.passable (loc)) {
+						Guard.Add (hill, loc);
+						break;
+					}
+				}
+			}
 
-			//Food
+			#region aim ants to food
 			foreach (var food in state.FoodTiles) {
 				int dist = int.MaxValue;
 				AntLoc antFood = null;
@@ -65,14 +94,16 @@ namespace Ants
 				} else
 					break;
 			}
-
+			#endregion
 			
+			
+			
+			#region Enemy aim
 			//Add Enemy Hill to AIM
 			state.EnemyHills.AddRange (state.EnemyHills);
-			
-			//find Enemy aim 
+
 			foreach (var ant in state.MyAnts) {
-				int distEnemy = state.ViewRadius2 * 2;
+				int distEnemy = state.ViewRadius2 * 3;
 				Location aimEnemy = null;				
 				int dist;
 				int attakEnemy = 0;
@@ -83,7 +114,7 @@ namespace Ants
 						distEnemy = dist;
 						aimEnemy = enemy;
 					}
-					if (dist < state.AttackRadius2)
+					if (dist < state.AttackRadius2 + 1)
 						attakEnemy++;
 				}
 				
@@ -92,19 +123,19 @@ namespace Ants
 					//find frinds in  state.AttackRadius2
 					int attakFrinds = 0;
 					int saveDist = state.AttackRadius2 + 1;	
-					if (aimEnemy != null)
-						foreach (var friends in state.MyAnts) {
-							dist = state.distance (aimEnemy, friends);
-							if (dist < saveDist) { 
-								attakFrinds++;
-							}
+					foreach (var friends in state.MyAnts) {
+						dist = state.distance (aimEnemy, friends);
+						if (dist < saveDist) { 
+							attakFrinds++;
 						}
+					}
 					#if DEBUG
-					sw.WriteLine (" we " + attakFrinds + " they " + attakEnemy);
+					sw.WriteLine (" ant " + ant + " friends " + attakFrinds + " they " + attakEnemy + " aim " + aimEnemy);
 					#endif
 					
 					//I am alone
-					if ((attakFrinds <= attakEnemy) && (aimEnemy != null) && (distEnemy < state.AttackRadius2 + 2)) {
+					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 2)) {	
+						//&& (!state.EnemyHills.Contains(new AntLoc(aimEnemy.col, aimEnemy.row, 1)))) {
 					
 						int runDist = distEnemy;
 						Location runLoc = null;
@@ -147,14 +178,12 @@ namespace Ants
 						currentTurn.Add (ant, aimEnemy);
 				}
 			}
+			#endregion
 			
-			//move other ants
+			#region Move other ants
 			foreach (var ant in state.MyAnts) {
 				if (!currentTurn.ContainsKey (ant)) {
-					int shaftRow = (state.ViewRadius2 + (state.ViewRadius2)) * ((-1) ^ rng.Next (4));
-					int shaftCol = (state.ViewRadius2 + rng.Next (state.ViewRadius2)) * ((-1) ^ rng.Next (4));
-					Location aim = state.destination (ant, new Location (shaftRow, shaftCol));
-				
+					Location aim = smeshnie [rng.Next (4)];
 					if (oldTurn.ContainsKey (ant)) 
 					if ((ant.row != oldTurn [ant].row) && (ant.col != oldTurn [ant].col))
 						aim = oldTurn [ant];
@@ -164,11 +193,39 @@ namespace Ants
 					#endif	
 				}			
 			}
+			#endregion
 			
+			#region Setup guard
+			if (state.MyAnts.Count > 5 * state.MyHills.Count) {
+				foreach (var hill in Guard.Keys) {
+					AntLoc tmp = new AntLoc (Guard [hill], 0);
+					if (currentTurn.ContainsKey (tmp)) {
+						currentTurn [tmp] = Guard [hill];
+					} else {
+					
+						int dist = int.MaxValue;
+						AntLoc antGuard = null;
+						foreach (var ant in state.MyAnts) {
+							if (state.distance (hill, ant) < dist) {
+								dist = state.distance (hill, ant);
+								antGuard = ant; 
+							}
+						}
+						if (antGuard != null) 
+						if (currentTurn.ContainsKey (antGuard))
+							currentTurn [antGuard] = Guard [hill];
+						else
+							currentTurn.Add (antGuard, Guard [hill]);
+					}
+				}
+			}
+			#endregion
+			/**/
 			#if DEBUG
 			sw.WriteLine("runs ANTS");
 			#endif	
 			
+			#region runs Ants
 			oldTurn = new Dictionary<AntLoc, Location> ();
 			
 			foreach (AntLoc ant in currentTurn.Keys) {
@@ -191,6 +248,8 @@ namespace Ants
 						#if DEBUG
 						sw.WriteLine (" ant " + ant + " move " + NewAnt);
 						#endif						
+					} else {
+						state.addAnt (ant.row, ant.col, 0);
 					}
 				}/**/
 				
@@ -198,9 +257,7 @@ namespace Ants
 					return;
 				}
 			}
-			
-			
-			
+			#endregion			
 		}
 		
 		public static void Main (string[] args)
