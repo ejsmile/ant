@@ -11,6 +11,7 @@ namespace Ants
 		private HashSet<Location> destinations;
 		private IDictionary<AntLoc, Location> currentTurn;
 		private IDictionary<AntLoc, Location> oldTurn;
+
 		#if DEBUG
 		private FileStream fs;
 		private StreamWriter sw;
@@ -38,6 +39,21 @@ namespace Ants
 			destinations.Clear ();
 			currentTurn.Clear ();
 			
+			#region Setup Discovery Aims
+			List<Location > Discovery = new List<Location> ();
+			for (int row = 0; row < state.Height / (state.ViewRadius2 / 2); row++) {
+				for (int col = 0; col < state.Width / (state.ViewRadius2 / 2); col++) {
+					Discovery.Add (new Location (row, col));
+				}
+			}
+			
+			foreach (var ant in state.MyAnts) {
+				Location tmp = new Location (ant.row / (state.ViewRadius2 / 2), ant.col / (state.ViewRadius2 / 2));
+				if (Discovery.Contains (tmp))
+					Discovery.Remove (tmp);
+			}
+			#endregion
+			
 			
 			Location[] hod = new Location[] {new Location (0, -state.ViewRadius2 - 1), new Location (0, state.ViewRadius2 + 1),	
 				new Location (-state.ViewRadius2 - 1, 0), new Location (state.ViewRadius2 + 1, 0) ,
@@ -45,23 +61,13 @@ namespace Ants
 				new Location (state.ViewRadius2 / 2 + 1, state.ViewRadius2 / 2 + 1),	
 				new Location (state.ViewRadius2 / 2 + 1, -state.ViewRadius2 / 2 - 1),
 				new Location (-state.ViewRadius2 / 2 - 1, state.ViewRadius2 / 2 + 1)};
-			/**/
-			
-			/*
-			Location[] hod = new Location[] {new Location (0, -state.AttackRadius2 - 1), new Location (0, state.AttackRadius2 + 1),	
-				new Location (-state.AttackRadius2 - 1, 0), new Location (state.AttackRadius2 + 1, 0) ,
-				new Location (-state.AttackRadius2 / 2 - 1, -state.AttackRadius2 / 2 + 1), 
-				new Location (state.AttackRadius2 / 2 + 1, state.AttackRadius2 / 2 + 1),	
-				new Location (state.AttackRadius2 / 2 + 1, -state.AttackRadius2 / 2 - 1),
-				new Location (-state.AttackRadius2 / 2 - 1, state.AttackRadius2 / 2 + 1)};
-			/**/
 			Location[] smeshnie = new Location[] {new Location (0, -state.ViewRadius2 - rng.Next (state.ViewRadius2)), 
 				new Location (0, state.ViewRadius2 + rng.Next (state.ViewRadius2)),	
 				new Location (-state.ViewRadius2 - rng.Next (state.ViewRadius2), 0), 
 				new Location (state.ViewRadius2 + rng.Next (state.ViewRadius2), 0)};
 			
-			//Find Guard
-			IDictionary<AntLoc, Location> Guard = new Dictionary<AntLoc, Location> ();
+			#region Find Guard for my Hills
+			IDictionary<AntLoc, Location > Guard = new Dictionary<AntLoc, Location> ();
 			foreach (var hill in state.MyHills) {
 				foreach (var dest in Ants.Aim.Keys) {
 					Location loc = state.destination (hill, dest);
@@ -71,8 +77,16 @@ namespace Ants
 					}
 				}
 			}
+			#endregion
 
-			#region aim ants to food
+			#region aim ants to food + Enemy hills
+			
+			//Add Enemy Hill to AIM food :)
+			foreach (var hill in state.EnemyHills) {
+				state.FoodTiles.Add (new Location (hill.row, hill.col));
+			}
+
+			
 			foreach (var food in state.FoodTiles) {
 				int dist = int.MaxValue;
 				AntLoc antFood = null;
@@ -99,9 +113,6 @@ namespace Ants
 			
 			
 			#region Enemy aim
-			//Add Enemy Hill to AIM
-			state.EnemyHills.AddRange (state.EnemyHills);
-
 			foreach (var ant in state.MyAnts) {
 				int distEnemy = state.ViewRadius2 * 3;
 				Location aimEnemy = null;				
@@ -134,8 +145,9 @@ namespace Ants
 					#endif
 					
 					//I am alone
-					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 3) && (attakFrinds < 4)) {	
+					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 3)) {	
 						int runDist = distEnemy;
+						
 						Location runLoc = null;
 						foreach (Location loc in hod) {
 							Location newLoc = state.destination (ant, loc);
@@ -183,9 +195,9 @@ namespace Ants
 				if (!currentTurn.ContainsKey (ant)) {
 					
 					Location aim = smeshnie [rng.Next (4)];
-					if (state.Discovery.Count > 0) {
+					if (Discovery.Count > 0) { 
 						int dist = int.MaxValue;
-						foreach (var loc in state.Discovery) {
+						foreach (var loc in Discovery) {
 							Location aimTmp = new Location (loc.row * (state.ViewRadius2 / 2), loc.col * (state.ViewRadius2 / 2));
 							int tmp = state.distance (aimTmp, ant);
 							if (tmp < dist) {
@@ -195,8 +207,7 @@ namespace Ants
 						}
 					} 					
 					if (oldTurn.ContainsKey (ant)) {
-						//if ((ant.row != oldTurn [ant].row) && (ant.col != oldTurn [ant].col))
-						if (state.distance(ant, oldTurn [ant]) > (state.ViewRadius2 / 2)) {
+						if (state.distance (ant, oldTurn [ant]) > (state.ViewRadius2 / 2)) {
 							aim = oldTurn [ant];
 						}
 					}
@@ -243,7 +254,7 @@ namespace Ants
 			oldTurn = new Dictionary<AntLoc, Location> ();
 			
 			foreach (AntLoc ant in currentTurn.Keys) {
-				List<char> directions = state.direction_algor_A (ant, currentTurn [ant]);
+				List<char > directions = state.direction_algor_A (ant, currentTurn [ant]);
 				
 				if (directions.Count == 0) {
 					//добавление препядствия
