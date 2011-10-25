@@ -29,7 +29,6 @@ namespace Ants
 
 		public int SpawnRadius2 { get; private set; }
 		
-		public List<Location> Discovery;
 		public List<AntLoc> MyAnts;
 		public List<AntLoc> EnemyAnts;
 		public List<AntLoc> MyHills;
@@ -66,13 +65,6 @@ namespace Ants
 					map [row, col] = Tile.Land;
 				}
 			}
-			
-			Discovery = new List<Location>();
-			for (int row = 0; row < height / (viewradius2 / 2); row++) {
-				for (int col = 0; col < width / (viewradius2 / 2); col++) {
-					Discovery.Add(new Location(row, col));
-				}
-			}
 		}
 		
 		public void startNewTurn ()
@@ -82,10 +74,8 @@ namespace Ants
 			
 			// clear ant data
 			foreach (AntLoc loc in MyAnts) {
-				Location tmp = new Location(loc.row / (ViewRadius2 / 2), loc.col / (ViewRadius2 / 2));
 				map [loc.row, loc.col] = Tile.Land;
 				if (EnemyHills.Contains(loc)) map [loc.row, loc.col] = Tile.Land;
-				if (Discovery.Contains(tmp)) Discovery.Remove(tmp);
 			}
 			//foreach (Location loc in EnemyAnts)
 			//	map [loc.row, loc.col] = Tile.Land;
