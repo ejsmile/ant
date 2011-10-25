@@ -75,7 +75,10 @@ namespace Ants
 			// clear ant data
 			foreach (AntLoc loc in MyAnts) {
 				map [loc.row, loc.col] = Tile.Land;
-				if (EnemyHills.Contains(loc)) map [loc.row, loc.col] = Tile.Land;
+				if (EnemyHills.Contains(loc)) {
+					map [loc.row, loc.col] = Tile.Land;
+					EnemyHills.Remove(loc);
+				}
 			}
 			//foreach (Location loc in EnemyAnts)
 			//	map [loc.row, loc.col] = Tile.Land;
