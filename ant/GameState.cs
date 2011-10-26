@@ -244,7 +244,7 @@ namespace Ants
 			//Закрытий список вершин поиск завершен
 			IDictionary<Location, Node > CloseList = new Dictionary<Location, Node> ();
 			//Оптимизация поиска по массиву открытих вершин
-			IDictionary<int,List<Location >> Tree = new Dictionary<int, List<Location>> (); 
+			IDictionary<int,HashSet<Location>> Tree = new Dictionary<int, HashSet<Location>> (); 
 			List<char > directions = new List<char> ();
 			//начальная точка
 			CloseList.Add (loc1, new Node (loc1, new Location (0, distance (loc1, loc2))));
@@ -284,21 +284,25 @@ namespace Ants
 								OpenList [newLoc] = new Node (loc, size);
 
 								if (f < head) head = f;
-								if (!Tree.ContainsKey (f)) Tree.Add (f, new List<Location> ());								
+								if (!Tree.ContainsKey (f)) Tree.Add (f, new HashSet<Location> ());								
 								Tree [f].Add (newLoc);
 							}
 						} else {
 							OpenList.Add (newLoc, new Node (loc, size));
 							if (f < head)	head = f;
-							if (!Tree.ContainsKey (f)) Tree.Add (f, new List<Location> ());
+							if (!Tree.ContainsKey (f)) Tree.Add (f, new HashSet<Location> ());
 						
 							Tree [f].Add (newLoc);	
 						}
 					}
 				}
 				if (Tree.Keys.Count > 0) {
+					foreach(var l in Tree [head]) { 
+						loc = l;
+						break;
+					}
 					//loc = Tree [head] [Tree[head].Count - 1];
-					loc = Tree [head] [0];
+					//loc = Tree [head][0];
 					CloseList.Add (loc, OpenList [loc]);
 					OpenList.Remove (loc);
 					Tree [head].Remove (loc);
@@ -314,11 +318,10 @@ namespace Ants
 					break;
 				}
 
-				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 10))
-					//return new List<char> ();
+				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
 					break;
 				
-				if (CloseList.ContainsKey (loc2))
+				if (CloseList.ContainsKey (loc2))// || head > (ViewRadius2 * 6)) 
 					finish = false;
 			}
 			
