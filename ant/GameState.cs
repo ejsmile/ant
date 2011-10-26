@@ -333,7 +333,8 @@ namespace Ants
 				//Точка не достижима
 				int h = int.MaxValue;
 				foreach (var item in CloseList.Keys) {
-					if ((CloseList [item].Size.col < h) && ((item.row != loc1.row) || (item.col != loc1.col))) {
+					//if ((CloseList [item].Size.col < h) && ((item.row != loc1.row) || (item.col != loc1.col))) {
+					if (CloseList [item].Size.col < h) {
 						h = CloseList [item].Size.col;
 						find = CloseList [item].Parent;
 					}
