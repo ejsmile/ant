@@ -29,12 +29,12 @@ namespace Ants
 
 		public int SpawnRadius2 { get; private set; }
 		
-		public List<AntLoc> MyAnts;
-		public List<AntLoc> EnemyAnts;
-		public List<AntLoc> MyHills;
-		public List<AntLoc> EnemyHills;
-		public List<Location> DeadTiles;
-		public List<Location> FoodTiles;
+		public HashSet<AntLoc> MyAnts;
+		public HashSet<AntLoc> EnemyAnts;
+		public HashSet<AntLoc> MyHills;
+		public HashSet<AntLoc> EnemyHills;
+		public HashSet<Location> DeadTiles;
+		public HashSet<Location> FoodTiles;
 		private Tile[,] map;
 		
 		public GameState (int width, int height, 
@@ -52,12 +52,12 @@ namespace Ants
 			AttackRadius2 = attackradius2;
 			SpawnRadius2 = spawnradius2;
 			
-			MyAnts = new List<AntLoc> ();
-			EnemyAnts = new List<AntLoc> ();
-			MyHills = new List<AntLoc> ();
-			EnemyHills = new List<AntLoc> ();
-			DeadTiles = new List<Location> ();
-			FoodTiles = new List<Location> ();
+			MyAnts = new HashSet<AntLoc> ();
+			EnemyAnts = new HashSet<AntLoc> ();
+			MyHills = new HashSet<AntLoc> ();
+			EnemyHills = new HashSet<AntLoc> ();
+			DeadTiles = new HashSet<Location> ();
+			FoodTiles = new HashSet<Location> ();
 			
 			map = new Tile[height, width];
 			for (int row = 0; row < height; row++) {
@@ -244,7 +244,11 @@ namespace Ants
 			//Закрытий список вершин поиск завершен
 			IDictionary<Location, Node > CloseList = new Dictionary<Location, Node> ();
 			//Оптимизация поиска по массиву открытих вершин
-			IDictionary<int,HashSet<Location>> Tree = new Dictionary<int, HashSet<Location>> (); 
+			IDictionary<int,HashSet<Location>> TreeOpen = new Dictionary<int, HashSet<Location>> (); 
+			int headOpen = int.MaxValue;
+			//Оптимизация поиска по массиву закрытих вершин
+			IDictionary<int,HashSet<Location>> TreeClose = new Dictionary<int, HashSet<Location>> (); 
+			int headClose = 0;
 			List<char > directions = new List<char> ();
 			//начальная точка
 			CloseList.Add (loc1, new Node (loc1, new Location (0, distance (loc1, loc2))));
@@ -253,7 +257,6 @@ namespace Ants
 
 			bool finish = true;
 			DateTime start = DateTime.Now;
-			int head = int.MaxValue;
 			while (finish) {
 				
 				foreach (char c in Ants.Aim.Keys) {
@@ -270,48 +273,55 @@ namespace Ants
 							if (size.row < OpenList [newLoc].Size.row) {
 								//Смена значание Node требует смены индекса в дереве
 								int ff = OpenList [newLoc].Size.row + OpenList [newLoc].Size.col; 
-								Tree [ff].Remove (newLoc);
-								if (Tree [ff].Count == 0)
-									Tree.Remove (ff);
-								if (ff == head) {
-									head = int.MaxValue;
-									foreach (var item in Tree.Keys) {
-									if (item < head)
-									head = item;
+								TreeOpen [ff].Remove (newLoc);
+								if (TreeOpen [ff].Count == 0)
+									TreeOpen.Remove (ff);
+								if (ff == headOpen) {
+									headOpen = int.MaxValue;
+									foreach (var item in TreeOpen.Keys) {
+									if (item < headOpen)
+									headOpen = item;
 									}
 								}
 								
 								OpenList [newLoc] = new Node (loc, size);
 
-								if (f < head) head = f;
-								if (!Tree.ContainsKey (f)) Tree.Add (f, new HashSet<Location> ());								
-								Tree [f].Add (newLoc);
+								if (f < headOpen) headOpen = f;
+								if (!TreeOpen.ContainsKey (f)) TreeOpen.Add (f, new HashSet<Location> ());								
+								TreeOpen [f].Add (newLoc);
 							}
 						} else {
 							OpenList.Add (newLoc, new Node (loc, size));
-							if (f < head)	head = f;
-							if (!Tree.ContainsKey (f)) Tree.Add (f, new HashSet<Location> ());
+							if (f < headOpen)	headOpen = f;
+							if (!TreeOpen.ContainsKey (f)) TreeOpen.Add (f, new HashSet<Location> ());
 						
-							Tree [f].Add (newLoc);	
+							TreeOpen [f].Add (newLoc);	
 						}
 					}
 				}
-				if (Tree.Keys.Count > 0) {
-					foreach(var l in Tree [head]) { 
+				if (TreeOpen.Keys.Count > 0) {
+					foreach(var l in TreeOpen [headOpen]) { 
 						loc = l;
 						break;
 					}
 					//loc = Tree [head] [Tree[head].Count - 1];
 					//loc = Tree [head][0];
 					CloseList.Add (loc, OpenList [loc]);
+					
+					if (!TreeClose.ContainsKey(OpenList [loc].Size.row))
+						TreeClose.Add(OpenList [loc].Size.row, new HashSet<Location> ());
+					TreeClose[OpenList [loc].Size.row].Add(loc);
+					if (OpenList [loc].Size.row > headClose)
+						headClose = OpenList [loc].Size.row;
+					
 					OpenList.Remove (loc);
-					Tree [head].Remove (loc);
-					if (Tree [head].Count == 0) {
-						Tree.Remove (head);
-						head = int.MaxValue;
-						foreach (var item in Tree.Keys) {
-							if (item < head)
-								head = item;
+					TreeOpen [headOpen].Remove (loc);
+					if (TreeOpen [headOpen].Count == 0) {
+						TreeOpen.Remove (headOpen);
+						headOpen = int.MaxValue;
+						foreach (var item in TreeOpen.Keys) {
+							if (item < headOpen)
+								headOpen = item;
 						}
 					}
 				} else {
@@ -321,7 +331,8 @@ namespace Ants
 				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
 					break;
 				
-				if (CloseList.ContainsKey (loc2))// || head > (ViewRadius2 * 6)) 
+				//if (CloseList.ContainsKey (loc2))// || head > (ViewRadius2 * 6)) 
+				if (CloseList.ContainsKey (loc2) || (headClose > (ViewRadius2 * 3))) 
 					finish = false;
 			}
 			
@@ -335,7 +346,11 @@ namespace Ants
 			} else {
 				//Точка не достижима
 				int h = int.MaxValue;
-				foreach (var item in CloseList.Keys) {
+				if (!TreeClose.ContainsKey(headClose))
+					return new List<char>();
+					
+				foreach(var item in TreeClose[headClose]) {
+				//foreach (var item in CloseList.Keys) {
 					//if ((CloseList [item].Size.col < h) && ((item.row != loc1.row) || (item.col != loc1.col))) {
 					if (CloseList [item].Size.col < h) {
 						h = CloseList [item].Size.col;
