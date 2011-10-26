@@ -8,7 +8,7 @@ namespace Ants
 	{
 		
 		private Random rng;
-		private HashSet<Location> destinations;
+		//private HashSet<Location> destinations;
 		private IDictionary<AntLoc, Location> currentTurn;
 		private IDictionary<AntLoc, Location> oldTurn;
 
@@ -21,7 +21,7 @@ namespace Ants
 		public MyBot ()
 		{
 			rng = new Random (42 + 42);
-			destinations = new HashSet<Location> (new LocationComparer ());
+			//destinations = new HashSet<Location> (new LocationComparer ());
 			currentTurn = new Dictionary<AntLoc, Location> ();
 			oldTurn = new Dictionary<AntLoc, Location> ();
 			#if DEBUG
@@ -36,11 +36,23 @@ namespace Ants
 			#if DEBUG
 			sw.WriteLine ("!Turn " + number++);
 			#endif
-			destinations.Clear ();
+			#region setup turn
+			//destinations.Clear ();
 			currentTurn.Clear ();
+			Location[] hod = new Location[] {new Location (0, -state.ViewRadius2 - 1), new Location (0, state.ViewRadius2 + 1),	
+				new Location (-state.ViewRadius2 - 1, 0), new Location (state.ViewRadius2 + 1, 0) ,
+				new Location (-state.ViewRadius2 / 2 - 1, -state.ViewRadius2 / 2 + 1), 
+				new Location (state.ViewRadius2 / 2 + 1, state.ViewRadius2 / 2 + 1),	
+				new Location (state.ViewRadius2 / 2 + 1, -state.ViewRadius2 / 2 - 1),
+				new Location (-state.ViewRadius2 / 2 - 1, state.ViewRadius2 / 2 + 1)};
+			Location[] smeshnie = new Location[] {new Location (0, -state.ViewRadius2 - rng.Next (state.ViewRadius2)), 
+				new Location (0, state.ViewRadius2 + rng.Next (state.ViewRadius2)),	
+				new Location (-state.ViewRadius2 - rng.Next (state.ViewRadius2), 0), 
+				new Location (state.ViewRadius2 + rng.Next (state.ViewRadius2), 0)};
+			#endregion
 			
 			#region Setup Discovery Aims
-			List<Location > Discovery = new List<Location> ();
+			HashSet<Location > Discovery = new HashSet<Location> ();
 			for (int row = 0; row < state.Height / (state.ViewRadius2 / 2); row++) {
 				for (int col = 0; col < state.Width / (state.ViewRadius2 / 2); col++) {
 					Discovery.Add (new Location (row, col));
@@ -53,18 +65,6 @@ namespace Ants
 					Discovery.Remove (tmp);
 			}
 			#endregion
-			
-			
-			Location[] hod = new Location[] {new Location (0, -state.ViewRadius2 - 1), new Location (0, state.ViewRadius2 + 1),	
-				new Location (-state.ViewRadius2 - 1, 0), new Location (state.ViewRadius2 + 1, 0) ,
-				new Location (-state.ViewRadius2 / 2 - 1, -state.ViewRadius2 / 2 + 1), 
-				new Location (state.ViewRadius2 / 2 + 1, state.ViewRadius2 / 2 + 1),	
-				new Location (state.ViewRadius2 / 2 + 1, -state.ViewRadius2 / 2 - 1),
-				new Location (-state.ViewRadius2 / 2 - 1, state.ViewRadius2 / 2 + 1)};
-			Location[] smeshnie = new Location[] {new Location (0, -state.ViewRadius2 - rng.Next (state.ViewRadius2)), 
-				new Location (0, state.ViewRadius2 + rng.Next (state.ViewRadius2)),	
-				new Location (-state.ViewRadius2 - rng.Next (state.ViewRadius2), 0), 
-				new Location (state.ViewRadius2 + rng.Next (state.ViewRadius2), 0)};
 			
 			#region Find Guard for my Hills
 			IDictionary<AntLoc, Location > Guard = new Dictionary<AntLoc, Location> ();
@@ -85,28 +85,32 @@ namespace Ants
 			foreach (var hill in state.EnemyHills) {
 				state.FoodTiles.Add (new Location (hill.row, hill.col));
 			}
-
 			
-			foreach (var food in state.FoodTiles) {
-				int dist = int.MaxValue;
-				AntLoc antFood = null;
-			
-				foreach (var ant in state.MyAnts) {
-					if (!currentTurn.ContainsKey (ant))
+			//TODO переделать математическая задача на оптимизацию поиска расстояния между двумя массивами точек
+			foreach (var ant in state.MyAnts) {
+				if (oldTurn.ContainsKey (ant))
+				if (state.FoodTiles.Contains (oldTurn [ant])){
+					//|| state.EnemyHills.Contains (new AntLoc (oldTurn [ant], 1))) {
+					currentTurn.Add (ant, oldTurn [ant]);
+					continue;
+				}
+				int dist = state.ViewRadius2 * 2;
+				Location foodAim = null;
+				foreach (var food in state.FoodTiles) {
+					if (currentTurn.Values.Contains (food))
+						continue;
 					if (state.distance (ant, food) < dist) {
 						dist = state.distance (ant, food);
-						antFood = ant;
+						foodAim = food;
 					}
-					
+				
 				}
-				if (antFood != null) {
-					currentTurn.Add (antFood, food);
+				if (foodAim != null) {
+					currentTurn.Add (ant, foodAim);
 					#if DEBUG
-					sw.WriteLine (" ant " + antFood + " food " + food);
+					sw.WriteLine (" ant " + ant + " food " + foodAim);
 					#endif	
-					
-				} else
-					break;
+				}
 			}
 			#endregion
 			
@@ -114,7 +118,7 @@ namespace Ants
 			
 			#region Enemy aim
 			foreach (var ant in state.MyAnts) {
-				int distEnemy = state.ViewRadius2 * 3;
+				int distEnemy = state.ViewRadius2;
 				Location aimEnemy = null;				
 				int dist;
 				int attakEnemy = 0;
@@ -125,7 +129,7 @@ namespace Ants
 						distEnemy = dist;
 						aimEnemy = enemy;
 					}
-					if (dist < state.AttackRadius2 + 1)
+					if (dist < state.AttackRadius2 + 2)
 						attakEnemy++;
 				}
 				
@@ -172,7 +176,7 @@ namespace Ants
 						if (tmp > distEnemy) {
 							Location food = currentTurn [ant];
 							currentTurn [ant] = aimEnemy;
-							aimEnemy = null;
+							/*aimEnemy = null;
 							tmp = int.MaxValue;
 							
 							foreach (var ants in state.MyAnts) {
@@ -182,7 +186,7 @@ namespace Ants
 								}
 							}
 							if (aimEnemy != null)
-								currentTurn.Add (new AntLoc (aimEnemy, 0), food);
+								currentTurn.Add (new AntLoc (aimEnemy, 0), food);/**/
 						}
 					} else
 						currentTurn.Add (ant, aimEnemy);
@@ -197,7 +201,7 @@ namespace Ants
 					Location aim = smeshnie [rng.Next (4)];
 					if (Discovery.Count > 0) { 
 						int dist = int.MaxValue;
-						foreach (var loc in Discovery) {
+						foreach (var loc in Discovery.Shuffle (rng)) {
 							Location aimTmp = new Location (loc.row * (state.ViewRadius2 / 2), loc.col * (state.ViewRadius2 / 2));
 							int tmp = state.distance (aimTmp, ant);
 							if (tmp < dist) {
@@ -205,6 +209,7 @@ namespace Ants
 								aim = aimTmp;
 							}
 						}
+						aim = new Location (aim.row + rng.Next (state.ViewRadius2 / 2), aim.col + rng.Next (state.ViewRadius2 / 2));
 					} 					
 					if (oldTurn.ContainsKey (ant)) {
 						if (state.distance (ant, oldTurn [ant]) > (state.ViewRadius2 / 2)) {
