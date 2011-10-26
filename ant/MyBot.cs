@@ -8,10 +8,9 @@ namespace Ants
 	{
 		
 		private Random rng;
-		//private HashSet<Location> destinations;
 		private IDictionary<AntLoc, Location> currentTurn;
 		private IDictionary<AntLoc, Location> oldTurn;
-
+		
 		#if DEBUG
 		private FileStream fs;
 		private StreamWriter sw;
@@ -21,9 +20,10 @@ namespace Ants
 		public MyBot ()
 		{
 			rng = new Random (42 + 42);
-			//destinations = new HashSet<Location> (new LocationComparer ());
 			currentTurn = new Dictionary<AntLoc, Location> ();
 			oldTurn = new Dictionary<AntLoc, Location> ();
+			
+			
 			#if DEBUG
 			fs = new FileStream ("log.log", System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write);
 			sw = new StreamWriter (fs);
@@ -36,8 +36,8 @@ namespace Ants
 			#if DEBUG
 			sw.WriteLine ("!Turn " + number++);
 			#endif
+			
 			#region setup turn
-			//destinations.Clear ();
 			currentTurn.Clear ();
 			Location[] hod = new Location[] {new Location (0, -state.ViewRadius2 - 1), new Location (0, state.ViewRadius2 + 1),	
 				new Location (-state.ViewRadius2 - 1, 0), new Location (state.ViewRadius2 + 1, 0) ,
@@ -81,24 +81,26 @@ namespace Ants
 
 			#region aim ants to food + Enemy hills
 			
+			HashSet<Location> tmpFood = new HashSet<Location>();		
+			
 			//Add Enemy Hill to AIM food :)
 			foreach (var hill in state.EnemyHills) {
-				state.FoodTiles.Add (new Location (hill.row, hill.col));
+				tmpFood.Add (new Location (hill.row, hill.col));
+			}
+			foreach(var food in state.FoodTiles) {
+				tmpFood.Add (new Location (food.row, food.col));
 			}
 			
 			//TODO переделать математическая задача на оптимизацию поиска расстояния между двумя массивами точек
 			foreach (var ant in state.MyAnts) {
 				if (oldTurn.ContainsKey (ant))
-				if (state.FoodTiles.Contains (oldTurn [ant])){
-					//|| state.EnemyHills.Contains (new AntLoc (oldTurn [ant], 1))) {
-					currentTurn.Add (ant, oldTurn [ant]);
-					continue;
-				}
-				int dist = state.ViewRadius2 * 2;
-				Location foodAim = null;
-				foreach (var food in state.FoodTiles) {
-					if (currentTurn.Values.Contains (food))
+					if (state.FoodTiles.Contains (oldTurn [ant])){
+						currentTurn.Add (ant, oldTurn [ant]);
 						continue;
+					}
+				int dist = state.ViewRadius2;
+				Location foodAim = null;
+				foreach (var food in tmpFood) {
 					if (state.distance (ant, food) < dist) {
 						dist = state.distance (ant, food);
 						foodAim = food;
@@ -107,6 +109,7 @@ namespace Ants
 				}
 				if (foodAim != null) {
 					currentTurn.Add (ant, foodAim);
+					tmpFood.Remove(foodAim);
 					#if DEBUG
 					sw.WriteLine (" ant " + ant + " food " + foodAim);
 					#endif	
@@ -133,23 +136,37 @@ namespace Ants
 						attakEnemy++;
 				}
 				
-				if (aimEnemy != null) {
+				if (aimEnemy != null) 
+					if (distEnemy < state.AttackRadius2 + 3)
+					{
 				
 					//find frinds in  state.AttackRadius2
 					int attakFrinds = 0;
+					
+					/*
+					
+					if (state.MyAnts.Contains(new AntLoc(ant.row - 1, ant.col - 1, 0))) attakFrinds ++;
+					if (state.MyAnts.Contains(new AntLoc(ant.row, ant.col - 1, 0))) attakFrinds ++;
+					if (state.MyAnts.Contains(new AntLoc(ant.row - 1, ant.col, 0))) attakFrinds ++;
+					if (state.MyAnts.Contains(new AntLoc(ant.row + 1, ant.col + 1, 0))) attakFrinds ++;
+					if (state.MyAnts.Contains(new AntLoc(ant.row, ant.col + 1, 0))) attakFrinds ++;
+					if (state.MyAnts.Contains(new AntLoc(ant.row + 1, ant.col, 0))) attakFrinds ++;
+					/**/
 					int saveDist = state.AttackRadius2 + 1;	
+					
+					//FIXME TIME stop
 					foreach (var friends in state.MyAnts) {
 						dist = state.distance (aimEnemy, friends);
 						if (dist < saveDist) { 
 							attakFrinds++;
 						}
-					}
+					}/**/
 					#if DEBUG
 					sw.WriteLine (" ant " + ant + " friends " + attakFrinds + " they " + attakEnemy + " aim " + aimEnemy);
 					#endif
 					
 					//I am alone
-					if ((attakFrinds <= attakEnemy) && (distEnemy < state.AttackRadius2 + 3)) {	
+					if (attakFrinds < attakEnemy) {	
 						int runDist = distEnemy;
 						
 						Location runLoc = null;
@@ -174,7 +191,7 @@ namespace Ants
 					if (currentTurn.ContainsKey (ant)) {
 						int tmp = state.distance (ant, currentTurn [ant]);
 						if (tmp > distEnemy) {
-							Location food = currentTurn [ant];
+							//Location food = currentTurn [ant];
 							currentTurn [ant] = aimEnemy;
 							/*aimEnemy = null;
 							tmp = int.MaxValue;
@@ -201,7 +218,7 @@ namespace Ants
 					Location aim = smeshnie [rng.Next (4)];
 					if (Discovery.Count > 0) { 
 						int dist = int.MaxValue;
-						foreach (var loc in Discovery.Shuffle (rng)) {
+						foreach (var loc in Discovery) {
 							Location aimTmp = new Location (loc.row * (state.ViewRadius2 / 2), loc.col * (state.ViewRadius2 / 2));
 							int tmp = state.distance (aimTmp, ant);
 							if (tmp < dist) {
@@ -226,7 +243,7 @@ namespace Ants
 			#endregion
 			
 			#region Setup guard
-			if (state.MyAnts.Count > 5 * state.MyHills.Count) {
+			if (state.MyAnts.Count > 4 * state.MyHills.Count) {
 				foreach (var hill in Guard.Keys) {
 					AntLoc tmp = new AntLoc (Guard [hill], 0);
 					if (currentTurn.ContainsKey (tmp)) {
