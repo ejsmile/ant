@@ -331,13 +331,11 @@ namespace Ants
 				if ((TimeRemaining < 30) || ((DateTime.Now - start).Milliseconds > TurnTime / 20))
 					break;
 				
-				//if (CloseList.ContainsKey (loc2))// || head > (ViewRadius2 * 6)) 
 				if (CloseList.ContainsKey (loc2) || (headClose > (ViewRadius2 * 3))) 
 					finish = false;
 			}
 			
 			Location find = loc1;
-			Location old;
 			
 			
 			if (CloseList.ContainsKey (loc2)) {
@@ -350,8 +348,6 @@ namespace Ants
 					return new List<char>();
 					
 				foreach(var item in TreeClose[headClose]) {
-				//foreach (var item in CloseList.Keys) {
-					//if ((CloseList [item].Size.col < h) && ((item.row != loc1.row) || (item.col != loc1.col))) {
 					if (CloseList [item].Size.col < h) {
 						h = CloseList [item].Size.col;
 						find = CloseList [item].Parent;
@@ -360,19 +356,22 @@ namespace Ants
 				
 			}
 			
-			while (find != loc1) {
+			/*
+			Location old;
+			 while (find != loc1) {
 				old = CloseList [find].Parent;
 				directions.InsertRange (0, direction (old, find));
 				find = old;
+			}**/
+			
+			Location prev = CloseList [find].Parent;
+			
+			while (prev != loc1){
+				find = prev;
+				prev = CloseList [find].Parent;
 			}
-
-			
-			return directions;
-			/*
-			//Вышли т.к. не пути
-			
-			/**/
-
+				
+			return new List<char>(direction (prev, find));
 		}
 	}
 }
