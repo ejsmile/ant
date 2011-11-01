@@ -383,6 +383,7 @@ namespace Ants
 					if (!oldTurn.ContainsKey (NewAnt)) {
 						issueOrder (ant, directions [0]);
 						//добавление препядствия
+						state.ClearMap(ant.row, ant.col);
 						state.addAnt (NewAnt.row, NewAnt.col, 0);
 						oldTurn.Add (NewAnt, currentTurn [ant]);
 						#if DEBUG

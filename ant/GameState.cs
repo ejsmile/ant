@@ -112,6 +112,11 @@ namespace Ants
 				EnemyAnts.Add (ant);
 			}
 		}
+		public void ClearMap (int row, int col)
+		{
+			map [row, col] = Tile.Land;
+		}
+		
 
 		public void addHill (int row, int col, int team)
 		{
